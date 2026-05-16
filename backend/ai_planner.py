@@ -12,23 +12,23 @@ async def generate_route_plan(user: dict, customers: list, max_stops: int = 10) 
     """AI-prioritised route plan for a salesperson based on LIVE customer data."""
     api_key = os.environ.get("EMERGENT_LLM_KEY")
 
-    # Build compact dataset
+    # Build compact dataset — prefer customers with lat/lng, else use tier+outstanding to prioritise
     stops = []
     for c in customers:
-        if not c.get("lat") or not c.get("lng"):
-            continue
         stops.append({
             "id": c["id"],
             "name": c["name"],
             "area": c.get("area"),
+            "tier": c.get("tier"),
+            "beat_days": c.get("beat_days"),
             "outstanding": c.get("outstanding", 0),
             "overdue": c.get("overdue", 0),
             "last_visit": (c.get("last_visit_date") or "")[:10],
             "last_order": (c.get("last_order_date") or "")[:10],
             "credit_risk": c.get("credit_risk_score", 50),
             "brands": c.get("brand_preferences", []),
-            "lat": round(c["lat"], 4),
-            "lng": round(c["lng"], 4),
+            "lat": round(c["lat"], 4) if c.get("lat") else None,
+            "lng": round(c["lng"], 4) if c.get("lng") else None,
         })
 
     if not stops:
@@ -94,11 +94,21 @@ Limit plan to {max_stops} stops, prefer geographic clustering."""
 
 
 def _fallback_route_plan(user: dict, stops: list, max_stops: int) -> dict:
-    cust_by_id = {s["id"]: s for s in stops}
-    ranked = sorted(stops, key=lambda s: (-s["overdue"], -s["outstanding"]))[:max_stops]
+    # rank by tier first, then overdue+outstanding
+    tier_rank = {"PLATINUM": 4, "DIAMOND": 3, "GOLD": 2, "SILVER": 1}
+    ranked = sorted(stops, key=lambda s: (-tier_rank.get(s.get("tier") or "", 0), -s["overdue"], -s["outstanding"]))[:max_stops]
     plan = []
     for i, s in enumerate(ranked):
-        reason = "High overdue + outstanding" if s["overdue"] > 0 else "High outstanding"
+        reasons = []
+        if s.get("tier") in ("PLATINUM", "DIAMOND"):
+            reasons.append(f"{s['tier']} dealer")
+        if s["overdue"] > 0:
+            reasons.append(f"₹{s['overdue']:,.0f} overdue")
+        if s["outstanding"] > 0:
+            reasons.append(f"₹{s['outstanding']:,.0f} outstanding")
+        if s.get("beat_days"):
+            reasons.append(f"beat: {s['beat_days']}")
+        reason = " · ".join(reasons) or "Priority customer"
         objective = "collection" if s["overdue"] > 0 else "pitch"
         plan.append({
             "order": i + 1,
@@ -109,7 +119,7 @@ def _fallback_route_plan(user: dict, stops: list, max_stops: int) -> dict:
             "customer": s,
         })
     return {
-        "summary": f"Priority route for {user.get('name')}: {len(plan)} stops focused on overdue recovery first, then geographic cluster.",
+        "summary": f"Priority route for {user.get('name')}: {len(plan)} stops — PLATINUM & DIAMOND tier customers first, then recovery urgency.",
         "plan": plan,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }

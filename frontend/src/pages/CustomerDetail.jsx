@@ -47,8 +47,12 @@ export default function CustomerDetail() {
         <div className="lg:col-span-4 space-y-4">
           <div className="bg-surface border border-border rounded-lg p-5" data-testid="customer-profile">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">// PROFILE</div>
-            <h2 className="font-display font-black text-2xl tracking-tight">{c.name}</h2>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h2 className="font-display font-black text-2xl tracking-tight flex-1 leading-tight">{c.name}</h2>
+              {c.tier && <TierBadge tier={c.tier} />}
+            </div>
             <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5"><MapPin size={11} />{c.area}, {c.city}</div>
+            {c.beat_days && <div className="text-xs text-primary mt-1 font-mono uppercase tracking-wider">BEAT · {c.beat_days}</div>}
 
             <div className="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-border">
               <Stat label="Outstanding" value={formatINR(c.outstanding)} accent={c.overdue > 0 ? "text-destructive" : ""} />
@@ -223,6 +227,17 @@ function Stat({ label, value, accent = "" }) {
       <div className={`font-display font-black text-lg tabular ${accent}`}>{value}</div>
     </div>
   );
+}
+
+function TierBadge({ tier }) {
+  const map = {
+    PLATINUM: "bg-zinc-200 text-zinc-900 dark:bg-zinc-300 dark:text-zinc-900",
+    DIAMOND:  "bg-sky-100 text-sky-900 dark:bg-sky-300 dark:text-sky-950",
+    GOLD:     "bg-amber-100 text-amber-900 dark:bg-amber-300 dark:text-amber-950",
+    SILVER:   "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100",
+  };
+  const cls = map[tier] || "bg-muted text-muted-foreground";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${cls}`}>{tier}</span>;
 }
 
 function ScoreCard({ label, score, inverse }) {

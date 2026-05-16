@@ -153,6 +153,61 @@ async def _get_paginated(client: httpx.AsyncClient, url: str, headers: dict, par
     return out
 
 
+async def _sync_salespersons(db, client: httpx.AsyncClient, api_base: str, headers: dict, org_id: str) -> dict:
+    """Pull Zoho salespersons → ensure local user accounts → return map zoho_sp_id → local_user_id."""
+    from auth import hash_password
+    from models import new_id, now_iso
+    r = await client.get(f"{api_base}/books/v3/salespersons", headers=headers, params={"organization_id": org_id})
+    if r.status_code != 200:
+        logger.warning("Failed to fetch salespersons: %s", r.text[:200])
+        return {}
+    payload = r.json()
+    raw = payload.get("data") or payload.get("salespersons") or []
+    mapping = {}
+    EXCLUDE_NAMES = {"admin", "ne office", "office"}
+    for sp in raw:
+        if not sp.get("is_active", True):
+            continue
+        sp_id = str(sp.get("salesperson_id"))
+        name = (sp.get("salesperson_name") or "").strip()
+        email = (sp.get("salesperson_email") or "").strip().lower()
+        if name.lower() in EXCLUDE_NAMES:
+            continue
+        local = await db.users.find_one({"zoho_salesperson_id": sp_id}, {"_id": 0})
+        if not local and email:
+            local = await db.users.find_one({"email": email}, {"_id": 0})
+        if not local and name:
+            slug = name.lower().split()[0]
+            local = await db.users.find_one({"email": f"{slug}@nalanda.com"}, {"_id": 0})
+        if not local:
+            slug = name.lower().split()[0] if name else f"sp{sp_id[-4:]}"
+            user_email = email or f"{slug}@nalanda.com"
+            existing = await db.users.find_one({"email": user_email})
+            if existing:
+                local = existing
+            else:
+                doc = {
+                    "id": new_id(),
+                    "email": user_email,
+                    "password_hash": hash_password("Sales@123"),
+                    "name": name or slug.title(),
+                    "role": "sales",
+                    "phone": sp.get("salesperson_mobile") or "",
+                    "territory": f"{name} Beat",
+                    "active": True,
+                    "zoho_salesperson_id": sp_id,
+                    "zoho_salesperson_email": email,
+                    "created_at": now_iso(),
+                }
+                await db.users.insert_one(doc)
+                local = doc
+        if not local.get("zoho_salesperson_id"):
+            await db.users.update_one({"id": local["id"]}, {"$set": {"zoho_salesperson_id": sp_id, "zoho_salesperson_email": email}})
+        mapping[sp_id] = local["id"]
+    return mapping
+
+
+
 async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
     """Pull customers, invoices, payments, credit_notes from Zoho Books → MongoDB.
 
@@ -202,6 +257,10 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as c:
+            # ---------- SALESPERSONS (must come first so customer.assigned_to can be set) ----------
+            sp_map = await _sync_salespersons(db, c, api_base, headers, org_id)
+            counts["salespersons"] = len(sp_map)
+
             # ---------- CUSTOMERS (contacts where contact_type=customer) ----------
             contacts = await _get_paginated(c, f"{api_base}/books/v3/contacts", headers,
                                              {**params, "contact_type": "customer"}, "contacts")
@@ -269,6 +328,9 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
                         "amount": float(li.get("item_total") or 0),
                     } for li in inv.get("line_items", [])],
                     "last_synced_at": started.isoformat(),
+                    "zoho_salesperson_id": str(inv.get("salesperson_id") or ""),
+                    "salesperson_id": sp_map.get(str(inv.get("salesperson_id") or "")),
+                    "salesperson_name": inv.get("salesperson_name"),
                 }
                 await db.invoices.update_one(
                     {"zoho_invoice_id": zid},
@@ -276,6 +338,11 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
                     upsert=True,
                 )
                 counts["invoices"] += 1
+
+                # Assign customer to the salesperson seen on this invoice (most-recent invoice wins)
+                local_uid = sp_map.get(str(inv.get("salesperson_id") or ""))
+                if local_cid and local_uid:
+                    await db.customers.update_one({"id": local_cid}, {"$set": {"assigned_to": local_uid}})
 
             # ---------- PAYMENTS ----------
             payments = await _get_paginated(c, f"{api_base}/books/v3/customerpayments", headers, params, "customerpayments")

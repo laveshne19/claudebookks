@@ -27,6 +27,10 @@ def _build_customer_brief(customer: dict, invoices: list, payments: list) -> str
     brief = {
         "customer_name": customer["name"],
         "area": customer.get("area"),
+        "tier": customer.get("tier"),
+        "beat_days": customer.get("beat_days"),
+        "monthly_target_inr": customer.get("monthly_target"),
+        "l3m_avg_value_inr": customer.get("l3m_avg_value"),
         "credit_limit": customer.get("credit_limit"),
         "current_outstanding": customer.get("outstanding"),
         "current_overdue": customer.get("overdue"),

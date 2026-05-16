@@ -39,7 +39,8 @@ export default function Customers() {
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Customer</th>
-                <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Area</th>
+                <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Tier</th>
+                <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Beat</th>
                 <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Brands</th>
                 <th className="text-right px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Outstanding</th>
                 <th className="text-right px-4 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Credit Limit</th>
@@ -48,20 +49,17 @@ export default function Customers() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground text-sm">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground text-sm">Loading…</td></tr>
               ) : list.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground text-sm">No customers</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground text-sm">No customers</td></tr>
               ) : list.map((c) => (
                 <tr key={c.id} onClick={() => navigate(`/customers/${c.id}`)} className="border-b border-border hover:bg-surface-hover cursor-pointer transition" data-testid={`customer-row-${c.id}`}>
                   <td className="px-4 py-3">
                     <div className="font-medium">{c.name}</div>
                     <div className="text-xs text-muted-foreground font-mono">{c.code}</div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <MapPin size={12} className="text-muted-foreground" />{c.area}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3">{c.tier ? <TierBadge tier={c.tier} /> : <span className="text-xs text-muted-foreground">—</span>}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{c.beat_days || "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {c.brand_preferences?.slice(0, 3).map((b) => (
@@ -92,4 +90,15 @@ function RiskBadge({ score }) {
   if (score < 40) { label = "HIGH"; cls = "bg-destructive/10 text-destructive"; }
   else if (score < 65) { label = "MED"; cls = "bg-warning/10 text-warning"; }
   return <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${cls}`}>{label} · {score}</span>;
+}
+
+function TierBadge({ tier }) {
+  const map = {
+    PLATINUM: "bg-zinc-200 text-zinc-900 dark:bg-zinc-300 dark:text-zinc-900",
+    DIAMOND:  "bg-sky-100 text-sky-900 dark:bg-sky-300 dark:text-sky-950",
+    GOLD:     "bg-amber-100 text-amber-900 dark:bg-amber-300 dark:text-amber-950",
+    SILVER:   "bg-zinc-100 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100",
+  };
+  const cls = map[tier] || "bg-muted text-muted-foreground";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider ${cls}`}>{tier}</span>;
 }

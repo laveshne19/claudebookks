@@ -35,6 +35,17 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - ✅ **Notifications** — type-coded list with unread indicators, mark-as-read
 - ✅ Light/Dark theme toggle, persisted to localStorage
 
+## Round 6 — Proper Mapping + Real Live Data (16 May 2026)
+- ✅ **Zoho salesperson auto-sync** — Pulls `/books/v3/salespersons` first, matches/creates local user accounts, then assigns `customer.assigned_to` from each invoice's `salesperson_id`. Result: every Zoho customer is automatically attached to the real Nalanda rep.
+- ✅ **Mapping importer** (`/app/backend/mapping_importer.py`) — ingests `Nalanda_secondary_drive (4).xlsx`: applies PLATINUM/DIAMOND/GOLD/SILVER tier, beat_days, monthly target, L3M average to each customer (fuzzy name match)
+- ✅ **Customer model extended**: `tier`, `beat_days`, `monthly_target`, `l3m_avg_value`, `zoho_salesperson_id`, `salesperson_name`
+- ✅ **AI service** now feeds tier + beat_days + monthly_target + l3m_avg into Claude prompts → richer, tier-aware insights
+- ✅ **AI Route Planner** ranks by tier (PLATINUM > DIAMOND > GOLD > SILVER) then overdue/outstanding, shows beat days inline
+- ✅ **Customer list UI**: new Tier badge column (color-coded), new Beat column with weekly schedules
+- ✅ **Customer 360**: tier badge top-right, beat days under address
+- ✅ **Cleanup**: 30 demo/seed customers + 5 test users purged. System runs on 100% real data now.
+- ✅ **Live counts**: 2,075 customers · 2,667 invoices · 168 payments · 9 credit notes · 364 tiered (98 PLATINUM / 191 DIAMOND / 58 GOLD / 17 SILVER)
+
 ## Round 5 — Zoho LIVE Connected (16 May 2026)
 - ✅ **Real Nalanda Enterprises Zoho Books org `60068433004` (Chandigarh, GST-registered) is live**
 - ✅ Refresh token exchanged via Self Client OAuth · region `.in` · auto-detected

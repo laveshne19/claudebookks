@@ -41,6 +41,7 @@ from seed_data import seed_database
 from scheduler import start_scheduler, stop_scheduler, refresh_customer_aggregates
 from zoho_sync import sync_zoho, detect_region_and_org, _credentials_present as zoho_creds_present
 from excel_importer import import_all as import_historical
+from mapping_importer import apply_mapping
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -798,6 +799,12 @@ async def zoho_detect(current=Depends(require_roles("super_admin", "admin"))):
 async def import_historical_endpoint(force: bool = False, current=Depends(require_roles("super_admin", "admin"))):
     """Import 5 Excel files from /app/data/imports/. Idempotent unless force=true."""
     return await import_historical(db, force=force)
+
+
+@api.post("/import/mapping")
+async def import_mapping_endpoint(current=Depends(require_roles("super_admin", "admin"))):
+    """Apply Nalanda secondary-drive mapping: tier, beat_days, salesperson assignment."""
+    return await apply_mapping(db)
 
 
 @api.get("/sync/logs")
