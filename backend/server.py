@@ -42,6 +42,7 @@ from scheduler import start_scheduler, stop_scheduler, refresh_customer_aggregat
 from zoho_sync import sync_zoho, detect_region_and_org, _credentials_present as zoho_creds_present
 from excel_importer import import_all as import_historical
 from mapping_importer import apply_mapping
+from beat_planner import build_today_beat
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -805,6 +806,46 @@ async def import_historical_endpoint(force: bool = False, current=Depends(requir
 async def import_mapping_endpoint(current=Depends(require_roles("super_admin", "admin"))):
     """Apply Nalanda secondary-drive mapping: tier, beat_days, salesperson assignment."""
     return await apply_mapping(db)
+
+
+# ========== BEAT DAY TODAY ==========
+@api.get("/beat/today")
+async def beat_today(user=Depends(get_current_user), user_id: Optional[str] = None):
+    """Daily beat plan — which customers should this salesperson visit TODAY based on beat_days schedule."""
+    target_id = user["id"] if user["role"] == "sales" or not user_id else user_id
+    target_user = await db.users.find_one({"id": target_id}, {"_id": 0, "password_hash": 0}) or user
+    q = {}
+    if target_user.get("role") == "sales":
+        q["assigned_to"] = target_id
+    elif user_id:
+        q["assigned_to"] = user_id
+    customers = await db.customers.find(q, {"_id": 0}).to_list(5000)
+    return build_today_beat(customers)
+
+
+@api.post("/beat/visit")
+async def mark_beat_visit(payload: dict, user=Depends(get_current_user)):
+    """Mark a customer as visited today (creates a visit record + updates last_visit_date)."""
+    customer_id = payload.get("customer_id")
+    if not customer_id:
+        raise HTTPException(status_code=400, detail="customer_id required")
+    now = datetime.now(timezone.utc)
+    visit = {
+        "id": new_id(),
+        "user_id": user["id"],
+        "customer_id": customer_id,
+        "date": now.isoformat(),
+        "duration_minutes": payload.get("duration_minutes", 20),
+        "notes": payload.get("notes", ""),
+        "lat": payload.get("lat"),
+        "lng": payload.get("lng"),
+        "outcome": payload.get("outcome", "followup"),
+        "created_at": now.isoformat(),
+    }
+    await db.visits.insert_one(visit)
+    await db.customers.update_one({"id": customer_id}, {"$set": {"last_visit_date": now.isoformat()}})
+    visit.pop("_id", None)
+    return visit
 
 
 @api.get("/sync/logs")

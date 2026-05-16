@@ -11,6 +11,7 @@ const NAV = [
   { label: "Sales", to: "/sales", icon: ShoppingBag, module: "sales" },
   { label: "Accounts", to: "/accounts", icon: Wallet, module: "accounts" },
   { label: "Schemes", to: "/schemes", icon: Tag, module: "schemes" },
+  { label: "Today's Beat", to: "/beat", icon: Calendar, module: "route" },
   { label: "AI Route", to: "/route", icon: Sparkles, module: "route" },
   { label: "Map View", to: "/map", icon: Map, module: "route" },
   { label: "Attendance", to: "/attendance", icon: Clock, module: "attendance" },

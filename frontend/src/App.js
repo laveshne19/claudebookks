@@ -63,6 +63,7 @@ function App() {
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/map" element={<ProtectedRoute><RouteMap /></ProtectedRoute>} />
             <Route path="/route" element={<ProtectedRoute><AIRoute /></ProtectedRoute>} />
+            <Route path="/beat" element={<ProtectedRoute><BeatToday /></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
