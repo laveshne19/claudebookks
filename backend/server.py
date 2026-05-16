@@ -18,6 +18,10 @@ from auth import (
     hash_password, verify_password, create_access_token, create_refresh_token,
     decode_token, extract_token, get_current_user, require_roles,
 )
+from permissions import (
+    default_permissions, user_permissions, can_access_module,
+    filter_invoices_by_brands, filter_customers_by_brands, ALL_MODULES, ALL_BRANDS,
+)
 from models import (
     LoginRequest, RegisterRequest, UserOut,
     CustomerCreate, Customer,
@@ -28,10 +32,13 @@ from models import (
     NotificationCreate, Notification,
     TaskCreate, Task,
     VisitCreate, Visit,
+    LocationPing, PermissionsPatch,
     new_id, now_iso,
 )
 from ai_service import get_or_generate_insights
+from ai_planner import generate_route_plan, generate_performance_analysis
 from seed_data import seed_database
+from scheduler import start_scheduler, stop_scheduler, refresh_customer_aggregates
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -69,6 +76,9 @@ async def on_startup():
     await db.tasks.create_index("id", unique=True)
     await db.visits.create_index("id", unique=True)
     await db.ai_insights.create_index("customer_id", unique=True)
+    await db.location_pings.create_index("user_id")
+    await db.location_pings.create_index("timestamp")
+    await db.attendance.create_index([("user_id", 1), ("date", 1)], unique=True)
 
     # seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@nalanda.com").lower()
@@ -95,9 +105,16 @@ async def on_startup():
     except Exception as e:
         logger.exception("Seed failed: %s", e)
 
+    # start hourly aggregate scheduler
+    try:
+        start_scheduler(db)
+    except Exception as e:
+        logger.exception("Scheduler failed to start: %s", e)
+
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    stop_scheduler()
     client.close()
 
 
@@ -110,6 +127,8 @@ def _strip_user(user: dict) -> dict:
     user = dict(user)
     user.pop("password_hash", None)
     user.pop("_id", None)
+    # always attach effective permissions
+    user["effective_permissions"] = user_permissions(user)
     return user
 
 
@@ -158,6 +177,7 @@ async def logout(response: Response):
 
 @api.get("/auth/me")
 async def me(user=Depends(get_current_user)):
+    user["effective_permissions"] = user_permissions(user)
     return user
 
 
@@ -194,7 +214,34 @@ async def update_user(user_id: str, payload: dict, current=Depends(require_roles
         allowed["password_hash"] = hash_password(payload["password"])
     await db.users.update_one({"id": user_id}, {"$set": allowed})
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    user["effective_permissions"] = user_permissions(user)
     return user
+
+
+@api.patch("/users/{user_id}/permissions")
+async def update_permissions(user_id: str, payload: PermissionsPatch, current=Depends(require_roles("super_admin", "admin"))):
+    """Admin sets per-user permission overrides."""
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    existing = target.get("permissions") or {}
+    update_data = payload.model_dump(exclude_unset=True)
+    merged = {**existing, **update_data}
+    await db.users.update_one({"id": user_id}, {"$set": {"permissions": merged}})
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    user["effective_permissions"] = user_permissions(user)
+    return user
+
+
+@api.get("/permissions/options")
+async def permission_options(current=Depends(require_roles("super_admin", "admin"))):
+    return {
+        "modules": ALL_MODULES,
+        "brands": ALL_BRANDS,
+        "view_scopes": ["full", "aggregate_only", "totals_only"],
+        "customer_visibility": ["assigned", "all", "none"],
+        "roles": ["super_admin", "admin", "manager", "sales", "accounts", "viewer"],
+    }
 
 
 @api.delete("/users/{user_id}")
@@ -212,8 +259,12 @@ async def list_customers(
     assigned_to: Optional[str] = None,
     limit: int = 500,
 ):
+    perms = user_permissions(user)
+    # Customer visibility gate
+    if perms["customer_visibility"] == "none":
+        return []
     q = {}
-    if user["role"] == "sales":
+    if perms["customer_visibility"] == "assigned":
         q["assigned_to"] = user["id"]
     if assigned_to:
         q["assigned_to"] = assigned_to
@@ -226,6 +277,7 @@ async def list_customers(
             {"area": {"$regex": search, "$options": "i"}},
         ]
     customers = await db.customers.find(q, {"_id": 0}).sort("name", 1).to_list(limit)
+    customers = filter_customers_by_brands(customers, perms.get("brands") or [])
     return customers
 
 
@@ -687,15 +739,20 @@ async def report_productivity(user=Depends(get_current_user)):
 # ========== ZOHO SYNC (stub for now) ==========
 @api.post("/sync/zoho")
 async def trigger_zoho_sync(current=Depends(require_roles("super_admin", "admin"))):
-    """Triggers Zoho Books sync. Currently logs and returns mock status until live keys are added."""
-    log = {
-        "id": new_id(),
-        "started_at": now_iso(),
-        "status": "completed",
-        "synced": {"invoices": 0, "payments": 0, "customers": 0},
-        "message": "Zoho credentials not yet configured. Once Client ID / Secret / Refresh Token are added to .env, sync will run automatically every 30 min.",
-    }
-    await db.sync_logs.insert_one({**log, "_id": None} if False else log)
+    """Triggers immediate refresh. When Zoho credentials are configured, this will pull from Zoho.
+    Currently it performs a live aggregate refresh from local invoices/payments."""
+    try:
+        await refresh_customer_aggregates(db)
+        log = {
+            "id": new_id(),
+            "started_at": now_iso(),
+            "status": "completed",
+            "type": "manual_refresh",
+            "message": "Aggregates refreshed. Zoho Books credentials not yet configured — once added (ZOHO_CLIENT_ID/SECRET/REFRESH_TOKEN/ORG_ID), this endpoint will sync from Zoho.",
+        }
+    except Exception as e:
+        log = {"id": new_id(), "started_at": now_iso(), "status": "failed", "message": str(e)}
+    await db.sync_logs.insert_one(log)
     log.pop("_id", None)
     return log
 
@@ -704,6 +761,207 @@ async def trigger_zoho_sync(current=Depends(require_roles("super_admin", "admin"
 async def sync_logs(current=Depends(require_roles("super_admin", "admin"))):
     logs = await db.sync_logs.find({}, {"_id": 0}).sort("started_at", -1).to_list(50)
     return logs
+
+
+# ========== LOCATION & ATTENDANCE (Silent GPS) ==========
+@api.post("/location/ping")
+async def location_ping(body: LocationPing, user=Depends(get_current_user)):
+    """Silent location ping from the client. Used for attendance + admin live map.
+    No notifications are sent. Frontend collects this in background without user-facing UI."""
+    now = datetime.now(timezone.utc)
+    ts = body.timestamp or now.isoformat()
+    doc = {
+        "id": new_id(),
+        "user_id": user["id"],
+        "lat": body.lat,
+        "lng": body.lng,
+        "accuracy": body.accuracy,
+        "speed": body.speed,
+        "battery": body.battery,
+        "timestamp": ts,
+        "created_at": now.isoformat(),
+    }
+    await db.location_pings.insert_one(doc)
+
+    # Auto attendance — first ping of day = check-in; latest ping = check-out
+    date_key = now.strftime("%Y-%m-%d")
+    existing = await db.attendance.find_one({"user_id": user["id"], "date": date_key})
+    if not existing:
+        await db.attendance.insert_one({
+            "id": new_id(),
+            "user_id": user["id"],
+            "date": date_key,
+            "check_in": ts,
+            "check_in_lat": body.lat,
+            "check_in_lng": body.lng,
+            "check_out": ts,
+            "check_out_lat": body.lat,
+            "check_out_lng": body.lng,
+            "ping_count": 1,
+        })
+    else:
+        await db.attendance.update_one(
+            {"user_id": user["id"], "date": date_key},
+            {"$set": {
+                "check_out": ts,
+                "check_out_lat": body.lat,
+                "check_out_lng": body.lng,
+            }, "$inc": {"ping_count": 1}}
+        )
+    return {"ok": True}
+
+
+@api.get("/location/latest")
+async def location_latest(user=Depends(require_roles("super_admin", "admin", "manager")), user_id: Optional[str] = None):
+    """Admin/manager view of latest locations for all sales users."""
+    if user_id:
+        ping = await db.location_pings.find({"user_id": user_id}, {"_id": 0}).sort("timestamp", -1).limit(1).to_list(1)
+        return ping[0] if ping else {}
+    # Aggregate latest per user
+    sales = await db.users.find({"role": "sales", "active": True}, {"_id": 0, "id": 1, "name": 1, "territory": 1}).to_list(100)
+    result = []
+    for u in sales:
+        ping = await db.location_pings.find({"user_id": u["id"]}, {"_id": 0}).sort("timestamp", -1).limit(1).to_list(1)
+        if ping:
+            result.append({**u, **ping[0]})
+        else:
+            result.append({**u, "lat": None, "lng": None, "timestamp": None})
+    return result
+
+
+@api.get("/attendance")
+async def list_attendance(
+    user=Depends(get_current_user),
+    user_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+):
+    q = {}
+    if user["role"] == "sales":
+        q["user_id"] = user["id"]
+    elif user_id:
+        q["user_id"] = user_id
+    if date_from or date_to:
+        q["date"] = {}
+        if date_from:
+            q["date"]["$gte"] = date_from
+        if date_to:
+            q["date"]["$lte"] = date_to
+    records = await db.attendance.find(q, {"_id": 0}).sort("date", -1).to_list(500)
+    return records
+
+
+@api.get("/attendance/today")
+async def attendance_today(current=Depends(require_roles("super_admin", "admin", "manager"))):
+    """Today's attendance roll-call for admin."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    sales = await db.users.find({"role": "sales", "active": True}, {"_id": 0, "password_hash": 0}).to_list(100)
+    records = await db.attendance.find({"date": today}, {"_id": 0}).to_list(500)
+    rec_by_user = {r["user_id"]: r for r in records}
+    out = []
+    for u in sales:
+        r = rec_by_user.get(u["id"])
+        out.append({
+            "user_id": u["id"],
+            "name": u["name"],
+            "territory": u.get("territory"),
+            "checked_in": bool(r),
+            "check_in": r.get("check_in") if r else None,
+            "last_ping": r.get("check_out") if r else None,
+            "ping_count": r.get("ping_count", 0) if r else 0,
+        })
+    return out
+
+
+# ========== AI ROUTE & PERFORMANCE (Live data) ==========
+@api.get("/ai/route-plan")
+async def ai_route_plan(user=Depends(get_current_user), user_id: Optional[str] = None, max_stops: int = 10):
+    """AI-prioritised route plan using LIVE customer data (outstanding, overdue, last-visit)."""
+    target_id = user["id"] if user["role"] == "sales" or not user_id else user_id
+    target_user = await db.users.find_one({"id": target_id}, {"_id": 0, "password_hash": 0}) or user
+    # Their assigned customers (if sales) else all
+    if target_user.get("role") == "sales":
+        customers = await db.customers.find({"assigned_to": target_id}, {"_id": 0}).to_list(500)
+    else:
+        customers = await db.customers.find({}, {"_id": 0}).to_list(2000)
+    plan = await generate_route_plan(target_user, customers, max_stops=max_stops)
+    return plan
+
+
+@api.get("/ai/performance")
+async def ai_performance(user=Depends(get_current_user), user_id: Optional[str] = None):
+    """AI performance analysis from LIVE 30-day data."""
+    target_id = user["id"] if user["role"] == "sales" or not user_id else user_id
+    target_user = await db.users.find_one({"id": target_id}, {"_id": 0, "password_hash": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    period = datetime.now(timezone.utc).strftime("%Y-%m")
+    target = await db.targets.find_one({"user_id": target_id, "period": period}, {"_id": 0})
+
+    cust_ids = [c["id"] for c in await db.customers.find({"assigned_to": target_id}, {"_id": 0, "id": 1}).to_list(1000)]
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    invoices = await db.invoices.find({"customer_id": {"$in": cust_ids}, "date": {"$gte": thirty_days_ago}}, {"_id": 0}).to_list(2000)
+    payments = await db.payments.find({"customer_id": {"$in": cust_ids}, "date": {"$gte": thirty_days_ago}}, {"_id": 0}).to_list(2000)
+    visits = await db.visits.find({"user_id": target_id, "date": {"$gte": thirty_days_ago}}, {"_id": 0}).to_list(500)
+
+    return await generate_performance_analysis(target_user, target, invoices, payments, visits)
+
+
+# ========== VIEWER (Brand partner) DASHBOARD ==========
+@api.get("/dashboard/viewer")
+async def dashboard_viewer(user=Depends(get_current_user)):
+    """Restricted dashboard for external viewers (e.g. Boat brand partner).
+    Returns ONLY day-wise total sales of allowed brands. No customer names, no individual invoices."""
+    perms = user_permissions(user)
+    allowed_brands = perms.get("brands") or []
+    q = {}
+    if allowed_brands:
+        q["brand"] = {"$in": allowed_brands}
+    # last 30 days
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    q["date"] = {"$gte": cutoff}
+    invoices = await db.invoices.find(q, {"_id": 0}).to_list(10000)
+
+    # Group by date + brand → totals only
+    by_day = {}
+    for inv in invoices:
+        d = (inv.get("date") or "")[:10]
+        if not d:
+            continue
+        by_day.setdefault(d, {})
+        b = inv.get("brand", "Other")
+        by_day[d][b] = by_day[d].get(b, 0) + inv.get("amount", 0)
+
+    days_sorted = sorted(by_day.keys())
+    rows = []
+    for d in days_sorted:
+        row = {"date": d, "total": round(sum(by_day[d].values()), 0)}
+        for b, v in by_day[d].items():
+            row[b] = round(v, 0)
+        rows.append(row)
+
+    # Aggregate totals
+    grand_total = sum(r["total"] for r in rows)
+    brand_totals = {}
+    for inv in invoices:
+        b = inv.get("brand", "Other")
+        brand_totals[b] = brand_totals.get(b, 0) + inv.get("amount", 0)
+
+    return {
+        "scope": {
+            "brands": allowed_brands or ["All"],
+            "view_scope": perms.get("view_scope"),
+            "days": 30,
+        },
+        "totals": {
+            "grand_total": round(grand_total, 0),
+            "day_count": len(rows),
+            "avg_daily": round(grand_total / max(1, len(rows)), 0),
+            "by_brand": [{"brand": k, "value": round(v, 0)} for k, v in brand_totals.items()],
+        },
+        "daily": rows,
+    }
 
 
 # ========== HEALTH ==========

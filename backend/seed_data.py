@@ -49,13 +49,15 @@ CUSTOMER_PREFIXES = [
 async def seed_database(db):
     """Idempotent seed: only seeds if collections are empty."""
     # ============ USERS ============
-    if await db.users.count_documents({}) <= 1:  # only admin exists
+    # Always iterate users list; per-user existence is checked below
+    if True:
         users_to_seed = [
             {"email": "manager@nalanda.com", "password": "Manager@123", "name": "Rajesh Kapoor", "role": "manager", "phone": "+91 98201 11111", "territory": "Mumbai West"},
             {"email": "sales1@nalanda.com", "password": "Sales@123", "name": "Amit Sharma", "role": "sales", "phone": "+91 98202 22222", "territory": "Andheri-Bandra"},
             {"email": "sales2@nalanda.com", "password": "Sales@123", "name": "Priya Iyer", "role": "sales", "phone": "+91 98203 33333", "territory": "Borivali-Malad"},
             {"email": "sales3@nalanda.com", "password": "Sales@123", "name": "Vikram Singh", "role": "sales", "phone": "+91 98204 44444", "territory": "Dadar-Worli"},
             {"email": "accounts@nalanda.com", "password": "Accounts@123", "name": "Neha Patel", "role": "accounts", "phone": "+91 98205 55555", "territory": "Head Office"},
+            {"email": "boat@nalanda.com", "password": "Boat@123", "name": "Boat Partner View", "role": "viewer", "phone": "+91 98206 66666", "territory": "External · Boat Co.", "permissions": {"modules": ["dashboard"], "brands": ["Boat"], "view_scope": "totals_only", "customer_visibility": "none", "can_edit": False, "can_create": False, "can_export": False, "can_manage_users": False}},
         ]
         for u in users_to_seed:
             existing = await db.users.find_one({"email": u["email"]})
@@ -72,6 +74,8 @@ async def seed_database(db):
                 "active": True,
                 "created_at": now_iso(),
             }
+            if u.get("permissions"):
+                doc["permissions"] = u["permissions"]
             await db.users.insert_one(doc)
 
     # Fetch sales users for assignment

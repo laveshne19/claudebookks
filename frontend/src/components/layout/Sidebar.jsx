@@ -2,25 +2,28 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, ShoppingBag, Wallet, Tag, BarChart3,
-  Bell, Settings, LogOut, Building2, Map
+  Bell, Settings, LogOut, Building2, Map, Sparkles, Clock
 } from "lucide-react";
 
 const NAV = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "manager", "sales", "accounts"] },
-  { label: "Customers", to: "/customers", icon: Users, roles: ["super_admin", "admin", "manager", "sales"] },
-  { label: "Sales", to: "/sales", icon: ShoppingBag, roles: ["super_admin", "admin", "manager", "sales"] },
-  { label: "Accounts", to: "/accounts", icon: Wallet, roles: ["super_admin", "admin", "manager", "accounts"] },
-  { label: "Schemes", to: "/schemes", icon: Tag, roles: ["super_admin", "admin", "manager", "sales"] },
-  { label: "Route Map", to: "/route", icon: Map, roles: ["super_admin", "admin", "manager", "sales"] },
-  { label: "Reports", to: "/reports", icon: BarChart3, roles: ["super_admin", "admin", "manager", "accounts"] },
-  { label: "Notifications", to: "/notifications", icon: Bell, roles: ["super_admin", "admin", "manager", "sales", "accounts"] },
-  { label: "Admin", to: "/admin", icon: Settings, roles: ["super_admin", "admin"] },
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { label: "Customers", to: "/customers", icon: Users, module: "customers" },
+  { label: "Sales", to: "/sales", icon: ShoppingBag, module: "sales" },
+  { label: "Accounts", to: "/accounts", icon: Wallet, module: "accounts" },
+  { label: "Schemes", to: "/schemes", icon: Tag, module: "schemes" },
+  { label: "AI Route", to: "/route", icon: Sparkles, module: "route" },
+  { label: "Map View", to: "/map", icon: Map, module: "route" },
+  { label: "Attendance", to: "/attendance", icon: Clock, module: "attendance" },
+  { label: "Reports", to: "/reports", icon: BarChart3, module: "reports" },
+  { label: "Notifications", to: "/notifications", icon: Bell, module: "notifications" },
+  { label: "Admin", to: "/admin", icon: Settings, module: "admin" },
 ];
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const items = NAV.filter((n) => n.roles.includes(user?.role));
+  const allowed = new Set(user?.effective_permissions?.modules || ["dashboard"]);
+  const items = NAV.filter((n) => allowed.has(n.module));
 
   return (
     <aside

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import KPICard from "@/components/dashboard/KPICard";
 import AIInsightCard from "@/components/dashboard/AIInsightCard";
+import AIPerformanceCard from "@/components/dashboard/AIPerformanceCard";
 import { api, formatINR } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -126,6 +127,8 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
+          <AIPerformanceCard />
+
           <AIInsightCard title="AI Recommendation" badge="LIVE">
             <p>
               <span className="font-semibold">{data.priority_customers[0]?.name || "Top customer"}</span> hasn't ordered in 18+ days but has high outstanding.

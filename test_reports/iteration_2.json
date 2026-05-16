@@ -1,0 +1,46 @@
+{
+  "summary": "Round 2 backend + frontend regression. 25/25 new Round 2 tests + 23/23 prior tests = 48/48 passing. Viewer/Boat partner role works end-to-end (login → ViewerDashboard with BOAT TOTAL SALE ₹16.21L KPI, daily chart, day-wise table, NO customer data, sidebar shows only Dashboard, /api/customers returns [], /api/dashboard/admin returns 403). Effective permissions returned by /api/auth/me for all 5 roles. Admin can PATCH /users/{id}/permissions and /permissions/options returns modules/brands/view_scopes/customer_visibility/roles. Silent GPS: POST /api/location/ping creates attendance + ping in same call, /attendance/today (admin) lists all sales reps with checked_in flag, /location/latest returns array per sales rep. AI Route + AI Performance endpoints return 200 with valid structure (currently served by FALLBACK ranker because Claude call fails with AttributeError — see backend_issues). Sales Dashboard renders AI Performance Coach card with rating badge (ON TRACK, 103% predicted), strengths/gaps/next actions. /route page shows Claude summary banner + OSM map iframe + ordered priority stops with collection/pitch objective + suggested time + overdue/outstanding badges. /attendance page lists own check-in/last activity/ping count. PWA assets manifest.json + service-worker.js + icon-192.png + icon-512.png all 200. Scheduler logs 'Scheduler started — hourly aggregate refresh' on startup. Sales1 + Admin role regressions intact.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/ai/route-plan, /api/ai/performance", "issue": "Claude Sonnet 4.5 call fails with `AttributeError: 'LlmChat' object has no attribute 'with_max_tokens'` — emergentintegrations API surface change. Endpoint still returns 200 because fallback ranker is invoked in except block. Action: remove .with_max_tokens(...) chain in /app/backend/ai_planner.py (lines 69 and 171) OR replace with the supported parameter (web_search emergentintegrations LlmChat for current API). UI labels remain 'CLAUDE ROUTE STRATEGY' / 'AI PERFORMANCE COACH · LIVE' even though deterministic fallback is serving — consider conditional copy."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "All dashboards", "issues": ["Recharts emits transient width(-1)/height(-1) console warnings on first render — visual rendering is fine, purely a console nag. Carry-over from iteration 1."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_round2.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/round2_results.xml",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix /app/backend/ai_planner.py — remove or replace `.with_max_tokens(...)` calls (lines 69 + 171). Currently fallback ranks customers correctly so feature still works but AI strings are static. After fix, AI Route summary and Performance summary will be Claude-generated.",
+    "Optional: silence Recharts width/height warnings by giving ResponsiveContainer explicit min-width/min-height."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~980 lines — strongly recommend splitting into routers (auth, customers, dashboards, location, ai, permissions, reports) for maintainability.",
+    "ai_planner.py uses .with_max_tokens which isn't supported by the installed emergentintegrations LlmChat — but exception is caught, fallback runs, so endpoints return 200. Silent failure pattern is good for resilience.",
+    "Permissions merging in user_permissions correctly stacks role default + per-user overrides. Verified via PATCH /users/{id}/permissions returning effective_permissions reflecting overrides.",
+    "Attendance check-in/check-out logic uses upsert pattern on (user_id, date) unique index — clean.",
+    "Zoho sync endpoint clearly disclosed as MOCKED (returns 'credentials not yet configured' message) and runs local aggregate refresh as designed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_round2.py (new — 25 Round 2 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (48/48 — 23 iter1 + 25 round2)",
+    "frontend": "100% of tested Round 2 flows (Boat viewer dashboard, sales dashboard AI Performance card, AI Route page with Claude banner + map + stops, Attendance page, Admin Attendance Today + Permissions buttons, PWA manifest + service-worker)"
+  },
+  "test_credentials": "From /app/memory/test_credentials.md + Round 2 add: admin@nalanda.com / Admin@123, sales1@nalanda.com / Sales@123, accounts@nalanda.com / Accounts@123, manager@nalanda.com / Manager@123, boat@nalanda.com / Boat@123 (viewer role, customer_visibility=none, brands=[Boat]).",
+  "seed_data_creation": "Backend continues to auto-seed on startup. boat@nalanda.com seeded with viewer role + permissions{modules:[dashboard], brands:[Boat], view_scope:totals_only, customer_visibility:none}. Attendance + location_pings records created during testing for sales1.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All Round 2 endpoints (viewer dashboard, location/ping, attendance/today, location/latest, ai/route-plan, ai/performance, users/{id}/permissions, permissions/options) functioning. AI fallback masks the with_max_tokens bug — after main agent fixes emergentintegrations call, retest /api/ai/route-plan and /api/ai/performance to confirm Claude-generated content (look for non-generic summary text and predicted_month_end_pct not equal to int(pct*1.15) fallback formula). Browser geolocation prompt fires on first visit by sales/manager — this is expected per browser policy, not a bug.",
+  "rca of the issue": "AI Claude calls fail with AttributeError because the installed emergentintegrations LlmChat class no longer exposes .with_max_tokens (or never did in this version). The fluent-builder chain `.with_model(...).with_max_tokens(2000)` raises immediately. The try/except in ai_planner.py catches it and invokes _fallback_route_plan / _fallback_performance, which return correctly-shaped JSON, so the HTTP layer returns 200 and the UI renders. Fix: drop .with_max_tokens(...) — Claude defaults to a reasonable max — or check emergentintegrations docs for the correct setter (e.g. .with_params(max_tokens=2000) or constructor arg)."
+}

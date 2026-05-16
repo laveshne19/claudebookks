@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import KPICard from "@/components/dashboard/KPICard";
 import { api, formatINR } from "@/lib/api";
-import { Users, Building2, Tag, Wallet, FileText, Plus, RefreshCw, Activity } from "lucide-react";
+import { Users, Building2, Tag, Wallet, FileText, Plus, RefreshCw, Activity, Shield, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import PermissionsDialog from "@/components/admin/PermissionsDialog";
 
 export default function Admin() {
   const [data, setData] = useState(null);
@@ -16,6 +17,9 @@ export default function Admin() {
   const [open, setOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "sales", phone: "", territory: "" });
+  const [permsTarget, setPermsTarget] = useState(null);
+  const [attendance, setAttendance] = useState([]);
+  const [locations, setLocations] = useState([]);
 
   useEffect(() => {
     refresh();
@@ -24,6 +28,8 @@ export default function Admin() {
   function refresh() {
     api.get("/dashboard/admin").then(({ data }) => setData(data));
     api.get("/users").then(({ data }) => setUsers(data));
+    api.get("/attendance/today").then(({ data }) => setAttendance(data)).catch(() => {});
+    api.get("/location/latest").then(({ data }) => setLocations(data)).catch(() => {});
   }
 
   async function addUser() {
@@ -170,6 +176,7 @@ export default function Admin() {
                 <th className="text-left px-5 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Role</th>
                 <th className="text-left px-5 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Territory</th>
                 <th className="text-left px-5 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
+                <th className="text-right px-5 py-2.5 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -186,12 +193,82 @@ export default function Admin() {
                       {u.active !== false ? "● ACTIVE" : "○ DEACTIVATED"}
                     </span>
                   </td>
+                  <td className="px-5 py-3 text-right">
+                    <Button size="sm" variant="outline" onClick={() => setPermsTarget(u)} data-testid={`perm-btn-${u.id}`}>
+                      <Shield size={12} className="mr-1.5" /> Permissions
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Attendance + Live locations */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-surface border border-border rounded-lg p-5" data-testid="attendance-today">
+          <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono mb-3">// ATTENDANCE TODAY</div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border">
+              <th className="text-left py-2 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Rep</th>
+              <th className="text-left py-2 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Check-in</th>
+              <th className="text-right py-2 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Pings</th>
+              <th className="text-right py-2 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Status</th>
+            </tr></thead>
+            <tbody>
+              {attendance.map((a) => (
+                <tr key={a.user_id} className="border-b border-border last:border-0">
+                  <td className="py-2.5">
+                    <div className="font-medium text-sm">{a.name}</div>
+                    <div className="text-xs text-muted-foreground">{a.territory}</div>
+                  </td>
+                  <td className="py-2.5 text-xs font-mono">{a.check_in ? new Date(a.check_in).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                  <td className="py-2.5 text-right font-mono tabular text-xs">{a.ping_count}</td>
+                  <td className="py-2.5 text-right">
+                    <span className={`text-[10px] font-mono uppercase tracking-wider ${a.checked_in ? "text-success" : "text-muted-foreground"}`}>
+                      {a.checked_in ? "● ACTIVE" : "○ ABSENT"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {attendance.length === 0 && <tr><td colSpan={4} className="py-6 text-center text-xs text-muted-foreground">No attendance data yet · staff must open app on phone for silent location capture</td></tr>}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="bg-surface border border-border rounded-lg p-5" data-testid="live-locations">
+          <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono mb-3">// LIVE LOCATIONS</div>
+          <ul className="space-y-2">
+            {locations.map((l) => (
+              <li key={l.id} className="p-3 rounded border border-border flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-sm">{l.name}</div>
+                  <div className="text-xs text-muted-foreground">{l.territory}</div>
+                </div>
+                <div className="text-right">
+                  {l.lat ? (
+                    <>
+                      <div className="font-mono text-xs flex items-center gap-1"><MapPin size={11} className="text-primary" /> {l.lat.toFixed(3)}, {l.lng.toFixed(3)}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{l.timestamp ? new Date(l.timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""}</div>
+                    </>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground font-mono">NO PING YET</div>
+                  )}
+                </div>
+              </li>
+            ))}
+            {locations.length === 0 && <div className="text-xs text-muted-foreground py-4">No location data yet</div>}
+          </ul>
+        </div>
+      </div>
+
+      <PermissionsDialog
+        user={permsTarget}
+        open={!!permsTarget}
+        onClose={() => setPermsTarget(null)}
+        onSaved={refresh}
+      />
     </AppLayout>
   );
 }

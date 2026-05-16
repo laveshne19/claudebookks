@@ -13,7 +13,27 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 
-Role = Literal["super_admin", "admin", "manager", "sales", "accounts"]
+Role = Literal["super_admin", "admin", "manager", "sales", "accounts", "viewer"]
+
+
+class PermissionsPatch(BaseModel):
+    modules: Optional[List[str]] = None
+    brands: Optional[List[str]] = None
+    view_scope: Optional[Literal["full", "aggregate_only", "totals_only"]] = None
+    customer_visibility: Optional[Literal["assigned", "all", "none"]] = None
+    can_edit: Optional[bool] = None
+    can_create: Optional[bool] = None
+    can_export: Optional[bool] = None
+    can_manage_users: Optional[bool] = None
+
+
+class LocationPing(BaseModel):
+    lat: float
+    lng: float
+    accuracy: Optional[float] = None
+    speed: Optional[float] = None
+    battery: Optional[float] = None
+    timestamp: Optional[str] = None  # ISO; server overrides if missing
 
 
 # ====== AUTH ======
