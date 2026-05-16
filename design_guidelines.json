@@ -1,0 +1,126 @@
+{
+  "project_name": "Nalanda Enterprises - Enterprise ERP & CRM",
+  "theme_archetype": "Archetype 4: Swiss & High-Contrast with Neo-Tactical B2B Edge",
+  "design_philosophy": {
+    "core_principles": [
+      "Data Density over Decorative Padding: Use the 'Control Room' grid protocol. Maximize screen real estate for ledgers and tables.",
+      "Utilitarian Aesthetics: No glowing gradients, no purple AI magic. The design must feel like a precision instrument—sharp, exact, and fast.",
+      "Optical Alignment & Hierarchy: Use radical weight contrast in typography rather than relying purely on color for hierarchy."
+    ],
+    "ai_treatment": "AI insights are presented as calculated, terminal-style outputs (Monochrome Silver + Warm Amber), not mystical generative features. No sparkles, no purple/teal gradients."
+  },
+  "typography": {
+    "font_families": {
+      "heading": "Cabinet Grotesk",
+      "body": "IBM Plex Sans",
+      "mono": "JetBrains Mono"
+    },
+    "hierarchy": {
+      "h1": "text-3xl sm:text-4xl font-black tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold tracking-tight",
+      "card_title": "text-sm font-semibold tracking-wide uppercase text-muted-foreground",
+      "body": "text-sm leading-relaxed",
+      "data_table": "text-sm font-medium",
+      "numeric_ledger": "font-mono text-sm tabular-nums"
+    },
+    "installation_instructions": "Load Cabinet Grotesk via Fontshare, IBM Plex Sans and JetBrains Mono via Google Fonts."
+  },
+  "colors": {
+    "light_mode": {
+      "background": "#F7F7F8",
+      "surface": "#FFFFFF",
+      "surface_hover": "#F0F0F2",
+      "border": "#E4E4E7",
+      "text_primary": "#09090B",
+      "text_secondary": "#52525B",
+      "text_muted": "#A1A1AA",
+      "primary": "#FF4D00",
+      "primary_hover": "#E64500",
+      "primary_foreground": "#FFFFFF",
+      "ai_surface": "#FDFCF8",
+      "ai_border": "#E8D8B0",
+      "ai_text": "#996500",
+      "success": "#16A34A",
+      "warning": "#F59E0B",
+      "destructive": "#DC2626"
+    },
+    "dark_mode": {
+      "background": "#09090B",
+      "surface": "#121214",
+      "surface_hover": "#1C1C1F",
+      "border": "#27272A",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#A1A1AA",
+      "text_muted": "#52525B",
+      "primary": "#FF4D00",
+      "primary_hover": "#FF6B2B",
+      "primary_foreground": "#FFFFFF",
+      "ai_surface": "#141311",
+      "ai_border": "#3D3321",
+      "ai_text": "#FBBF24",
+      "success": "#22C55E",
+      "warning": "#FBBF24",
+      "destructive": "#EF4444"
+    },
+    "chart_tokens": {
+      "chart_1": "#FF4D00",
+      "chart_2": "#27272A",
+      "chart_3": "#A1A1AA",
+      "chart_4": "#FBBF24",
+      "chart_5": "#FAFAFA"
+    }
+  },
+  "spacing_and_radius": {
+    "radius": {
+      "base": "0.375rem",
+      "card": "0.5rem",
+      "button": "0.375rem",
+      "badge": "9999px"
+    },
+    "spacing_strategy": "Control Room Grid (Mode B). Tight gaps (gap-4 or gap-6) between widgets. Card internal padding p-5 or p-6. Zero empty vertical spaces; columns must align uniformly."
+  },
+  "layout_patterns": {
+    "app_shell": "Left vertical fixed sidebar (w-64) with dark obsidian theme in both light/dark modes to ground the application. Top bar (h-14) with global command palette search, notifications, and user dropdown. Main content area uses a fluid grid with max-w-screen-2xl container.",
+    "kpi_cards": "Flat design. 1px solid border (border-border). No default shadow. On hover: shadow-sm and -translate-y-[1px]. Upper-left title, large primary metric in the center, and a bottom-aligned compact trend indicator (e.g., '+12% vs last month').",
+    "customer_360_split": "2-column layout. Left column (col-span-1 md:col-span-4): Sticky Customer Profile + AI Insight Panel. Right column (col-span-1 md:col-span-8): Tabs for Ledger, Invoices, Payments, Scheme Eligibility.",
+    "ai_insight_panel": "The 'Monochrome Terminal' look. Pale amber/silver background. 1px solid border matching the text color at 20% opacity. Use mono typography for confidence scores and risk ratings. Add a subtle SVG noise pattern overlay. NO PURPLE GRADIENTS.",
+    "data_tables": "High density. Row height max 40px (h-10). Columns with monetary values or percentages MUST be right-aligned and use JetBrains Mono tabular-nums. Zebra striping disabled; rely on row hover backgrounds (hover:bg-muted/50)."
+  },
+  "motion": {
+    "philosophy": "Utilitarian. Used exclusively to reinforce state changes.",
+    "properties": "transition-all duration-200 ease-out",
+    "hover_state": "Slight lift (-translate-y-[1px]) for cards, subtle background color shift for rows/buttons.",
+    "page_transition": "Fade in with a minor upward slide: animate-in fade-in slide-in-from-bottom-2 duration-300"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "default_size": 18,
+    "default_stroke_width": 1.75,
+    "strategy": "Use sparingly. Primarily in the sidebar, command palette, and empty states. Avoid using icons beside every table header."
+  },
+  "media_and_images": {
+    "login_hero_bg": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/af0ab025-89aa-4751-8d30-d70381712cf4/images/772d819f53612412f6ea67fa029fec16f1631fb7f40a278d6f66157b58110865.png",
+      "description": "Abstract architectural interior of a high-tech logistics and electronics distribution center, glowing warm amber lights, obsidian black walls, stacked geometric forms."
+    },
+    "empty_state_illustration": {
+      "strategy": "Avoid generic vector illustrations. Use typographic art or highly structural ASCII/monoline SVGs using the border/muted text color. Keep it strictly professional."
+    }
+  },
+  "testing_attributes": "All interactive elements MUST include a data-testid attribute in kebab-case denoting their role (e.g., data-testid='login-submit-btn', data-testid='customer-table-row').",
+  "component_snippets": {
+    "kpi_card": "<div className='bg-surface border border-border rounded-lg p-5 flex flex-col justify-between h-full transition-all duration-200 hover:shadow-sm hover:-translate-y-[1px]'><div className='flex items-center justify-between'><h4 className='text-sm font-semibold uppercase tracking-wide text-muted-foreground'>Total Sales</h4><ActivityIcon size={16} className='text-muted-foreground' /></div><div className='mt-4'><div className='text-3xl font-black font-heading tracking-tight'>₹4.2Cr</div><div className='text-xs font-medium text-success mt-1'>+12.5% vs last month</div></div></div>",
+    "ai_insight_card": "<div className='relative overflow-hidden bg-ai-surface border border-ai-border rounded-lg p-5'><div className='absolute inset-0 opacity-[0.03] pointer-events-none' style={{ backgroundImage: 'url(\"data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E\")' }}></div><div className='relative z-10'><div className='flex items-center gap-2 mb-3'><Sparkles size={16} className='text-ai-text' /><span className='text-xs font-bold uppercase tracking-widest text-ai-text'>AI Next Order Prediction</span></div><div className='font-mono text-sm text-ai-text mb-2'>Propensity: High (87%)</div><p className='text-sm leading-relaxed text-foreground'>Customer typically reorders Boat Airdopes around the 15th. Pitch the new Q3 volume scheme.</p></div></div>",
+    "data_table_row": "<tr className='border-b border-border hover:bg-surface-hover transition-colors' data-testid='ledger-row-123'><td className='py-3 px-4 text-sm font-medium'>INV-2026-089</td><td className='py-3 px-4 text-sm text-muted-foreground'>12 Feb 2026</td><td className='py-3 px-4 text-sm text-right font-mono tabular-nums'>₹1,24,500.00</td><td className='py-3 px-4 text-sm text-right'><span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning'>Overdue</span></td></tr>"
+  },
+  "instructions_to_main_agent": [
+    "Ensure all fonts are imported properly in index.html or layout file.",
+    "Configure tailwind.config.js to map these color tokens exactly, especially custom AI colors.",
+    "Do NOT use Shadcn's default Card styling if it includes heavy box-shadows. Override it to be flat with a 1px border.",
+    "Implement the Layout with a fixed sidebar. The sidebar should always have a dark theme (bg-zinc-950) even in light mode to act as an anchor.",
+    "Utilize the login_hero_bg URL for the login screen's split layout (left side form, right side image with black/40 overlay).",
+    "Apply 'tabular-nums' utility to all numeric table cells and charts.",
+    "Ensure the AI insight panels have the SVG noise background and use the specific monochrome terminal colors provided. NEVER use gradients."
+  ]
+}
