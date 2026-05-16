@@ -262,20 +262,36 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
             counts["salespersons"] = len(sp_map)
 
             # ---------- CUSTOMERS (contacts where contact_type=customer) ----------
+            from address_utils import normalize_area, full_address, state_from_gstin
             contacts = await _get_paginated(c, f"{api_base}/books/v3/contacts", headers,
                                              {**params, "contact_type": "customer"}, "contacts")
             for ct in contacts:
                 zid = str(ct.get("contact_id"))
                 existing = await db.customers.find_one({"zoho_contact_id": zid}, {"_id": 0})
+                ba = ct.get("billing_address") or {}
+                addr_str = full_address(ba)
+                gstin = ct.get("gst_no") or (existing or {}).get("gstin") or ""
+                area = normalize_area(
+                    address=" ".join([ba.get("address") or "", ba.get("street2") or "", ba.get("attention") or ""]),
+                    city=ba.get("city") or "",
+                    attention=ba.get("attention") or "",
+                )
+                state = ba.get("state") or state_from_gstin(gstin) or "—"
+                city = ba.get("city") or area
                 doc = {
                     "zoho_contact_id": zid,
                     "name": ct.get("contact_name") or ct.get("company_name") or "Unknown",
                     "code": ct.get("cf_code") or (existing or {}).get("code") or f"ZOHO-{zid[-6:]}",
                     "phone": ct.get("phone") or ct.get("mobile") or (existing or {}).get("phone"),
                     "email": ct.get("email") or (existing or {}).get("email"),
-                    "gstin": ct.get("gst_no") or (existing or {}).get("gstin"),
+                    "gstin": gstin or None,
                     "credit_limit": float(ct.get("credit_limit") or (existing or {}).get("credit_limit") or 0),
                     "outstanding": float(ct.get("outstanding_receivable_amount") or 0),
+                    "address": addr_str or (existing or {}).get("address"),
+                    "area": area if area != "—" else (existing or {}).get("area") or "—",
+                    "city": city or (existing or {}).get("city") or "—",
+                    "state": state if state != "—" else (existing or {}).get("state") or "—",
+                    "zip": ba.get("zip") or (existing or {}).get("zip"),
                     "last_synced_at": started.isoformat(),
                 }
                 if existing:
@@ -284,9 +300,6 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
                     from models import new_id, now_iso
                     doc.update({
                         "id": new_id(),
-                        "area": (ct.get("billing_address", {}) or {}).get("city") or "Mumbai",
-                        "city": (ct.get("billing_address", {}) or {}).get("city") or "Mumbai",
-                        "state": (ct.get("billing_address", {}) or {}).get("state") or "Maharashtra",
                         "contact_person": ct.get("contact_name"),
                         "brand_preferences": [],
                         "assigned_to": None,

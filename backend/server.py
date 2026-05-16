@@ -47,6 +47,13 @@ from scheme_service import (
     upload_schemes_from_file, sync_zoho_brands,
     recompute_scheme_progress, recompute_all_schemes,
 )
+from data_upload_service import (
+    upload_customers as svc_upload_customers,
+    upload_beat_plans as svc_upload_beats,
+    upload_salesperson_mapping as svc_upload_sp_mapping,
+    get_template_csv,
+)
+from address_backfill import backfill_addresses as svc_backfill_addresses
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -762,19 +769,39 @@ async def report_aging(user=Depends(get_current_user)):
     return [{"bucket": k, "amount": round(v, 0)} for k, v in buckets.items()]
 
 
+async def _scoped_invoice_filter(db, user) -> dict:
+    """Return a Mongo filter that restricts invoices to those owned by the calling sales user.
+
+    Admin/super_admin/manager get an empty filter (full org view).
+    """
+    if user["role"] != "sales":
+        return {}
+    cust_ids = await db.customers.distinct("id", {"assigned_to": user["id"]})
+    if not cust_ids:
+        return {"customer_id": "__no_match__"}
+    return {"customer_id": {"$in": cust_ids}}
+
+
 @api.get("/reports/brand-performance")
 async def report_brand_performance(user=Depends(get_current_user)):
-    invoices = await db.invoices.find({}, {"_id": 0}).to_list(10000)
+    flt = await _scoped_invoice_filter(db, user)
+    invoices = await db.invoices.find(flt, {"_id": 0}).to_list(10000)
     brand_totals = {}
     for inv in invoices:
+        # Items-level (seed schema)
         for item in inv.get("items", []):
             brand_totals[item["brand"]] = brand_totals.get(item["brand"], 0) + item["amount"]
+        # Top-level brand (Zoho-synced invoices)
+        b = inv.get("brand")
+        if b and not inv.get("items"):
+            brand_totals[b] = brand_totals.get(b, 0) + float(inv.get("amount", 0))
     return sorted([{"brand": k, "value": round(v, 0)} for k, v in brand_totals.items()], key=lambda x: -x["value"])
 
 
 @api.get("/reports/sales-trend")
 async def report_sales_trend(user=Depends(get_current_user), months: int = 6):
-    invoices = await db.invoices.find({}, {"_id": 0}).to_list(20000)
+    flt = await _scoped_invoice_filter(db, user)
+    invoices = await db.invoices.find(flt, {"_id": 0}).to_list(20000)
     trend = []
     for i in range(months - 1, -1, -1):
         m_start = (datetime.now(timezone.utc) - timedelta(days=30 * (i + 1))).replace(day=1)
@@ -862,10 +889,62 @@ async def import_mapping_endpoint(current=Depends(require_roles("super_admin", "
     return await apply_mapping(db)
 
 
+# ========== UNIVERSAL DATA UPLOAD CENTER ==========
+@api.post("/admin/upload/customers")
+async def admin_upload_customers(file: UploadFile = File(...), current=Depends(require_roles("super_admin", "admin"))):
+    """Upload/update customers. See /api/admin/upload-template/customers for column spec."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="empty file")
+    return await svc_upload_customers(db, content, file.filename or "")
+
+
+@api.post("/admin/upload/beat-plans")
+async def admin_upload_beats(file: UploadFile = File(...), current=Depends(require_roles("super_admin", "admin"))):
+    """Upload beat-day plans (customer_name → beat_days)."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="empty file")
+    return await svc_upload_beats(db, content, file.filename or "")
+
+
+@api.post("/admin/upload/salesperson-mapping")
+async def admin_upload_sp_mapping(file: UploadFile = File(...), current=Depends(require_roles("super_admin", "admin"))):
+    """Map customers to salespersons (and optionally tier/beat_days/target)."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="empty file")
+    return await svc_upload_sp_mapping(db, content, file.filename or "")
+
+
+@api.get("/admin/upload-template/{kind}")
+async def admin_template(kind: str, current=Depends(require_roles("super_admin", "admin"))):
+    csv = get_template_csv(kind)
+    if not csv:
+        raise HTTPException(status_code=404, detail=f"unknown template: {kind}")
+    return Response(content=csv, media_type="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={kind}_template.csv"})
+
+
+@api.post("/admin/backfill-addresses")
+async def admin_backfill_addresses(current=Depends(require_roles("super_admin", "admin")),
+                                   max_concurrent: int = 4, batch_delay: float = 2.0,
+                                   limit: Optional[int] = None):
+    """Backfill billing addresses from Zoho for customers still showing default city.
+
+    Runs synchronously; may take 1-5 minutes for full org. Use ?limit=100 to test on a sample.
+    """
+    return await svc_backfill_addresses(db, max_concurrent=max_concurrent,
+                                        batch_delay=batch_delay, limit=limit)
+
+
 # ========== BEAT DAY TODAY ==========
 @api.get("/beat/today")
-async def beat_today(user=Depends(get_current_user), user_id: Optional[str] = None):
-    """Daily beat plan — which customers should this salesperson visit TODAY based on beat_days schedule."""
+async def beat_today(user=Depends(get_current_user), user_id: Optional[str] = None, limit: int = 12):
+    """Daily beat plan — which customers should this salesperson visit TODAY based on beat_days schedule.
+
+    Returns at most `limit` stops (default 12). Stops are ranked by tier × overdue × days-since-visit.
+    """
     target_id = user["id"] if user["role"] == "sales" or not user_id else user_id
     target_user = await db.users.find_one({"id": target_id}, {"_id": 0, "password_hash": 0}) or user
     q = {}
@@ -874,7 +953,14 @@ async def beat_today(user=Depends(get_current_user), user_id: Optional[str] = No
     elif user_id:
         q["assigned_to"] = user_id
     customers = await db.customers.find(q, {"_id": 0}).to_list(5000)
-    return build_today_beat(customers)
+    plan = build_today_beat(customers)
+    # Apply max cap
+    if isinstance(plan.get("stops"), list) and limit and limit > 0:
+        all_stops = plan["stops"]
+        plan["stops"] = all_stops[:limit]
+        plan["summary"]["total_available"] = len(all_stops)
+        plan["summary"]["limit"] = limit
+    return plan
 
 
 @api.post("/beat/visit")

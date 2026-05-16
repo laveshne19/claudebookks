@@ -4,6 +4,10 @@ import {
   LayoutDashboard, Users, ShoppingBag, Wallet, Tag, BarChart3,
   Bell, Settings, LogOut, Building2, Map, Sparkles, Clock, Calendar
 } from "lucide-react";
+import {
+  Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader,
+} from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 const NAV = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
@@ -20,17 +24,9 @@ const NAV = [
   { label: "Admin", to: "/admin", icon: Settings, module: "admin" },
 ];
 
-export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const allowed = new Set(user?.effective_permissions?.modules || ["dashboard"]);
-  const items = NAV.filter((n) => allowed.has(n.module));
-
+function SidebarBody({ items, user, onLogout, onItemClick }) {
   return (
-    <aside
-      className="hidden md:flex w-64 shrink-0 flex-col bg-zinc-950 text-zinc-200 border-r border-zinc-800 sidebar-scroll"
-      data-testid="sidebar"
-    >
+    <>
       <div className="h-14 flex items-center gap-2 px-5 border-b border-zinc-800/80">
         <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
           <Building2 size={18} className="text-white" strokeWidth={2} />
@@ -47,6 +43,7 @@ export default function Sidebar() {
           <NavLink
             key={it.to}
             to={it.to}
+            onClick={onItemClick}
             data-testid={`nav-${it.label.toLowerCase().replace(/\s+/g, "-")}`}
             className={({ isActive }) =>
               `group flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
@@ -72,7 +69,7 @@ export default function Sidebar() {
             <div className="text-[10px] uppercase tracking-widest text-zinc-500">{user?.role?.replace("_", " ")}</div>
           </div>
           <button
-            onClick={async () => { await logout(); navigate("/login"); }}
+            onClick={onLogout}
             data-testid="logout-btn"
             className="p-1.5 rounded text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
             title="Sign out"
@@ -81,6 +78,52 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
+    </>
+  );
+}
+
+export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const allowed = new Set(user?.effective_permissions?.modules || ["dashboard"]);
+  const items = NAV.filter((n) => allowed.has(n.module));
+
+  return (
+    <aside
+      className="hidden md:flex w-64 shrink-0 flex-col bg-zinc-950 text-zinc-200 border-r border-zinc-800 sidebar-scroll"
+      data-testid="sidebar"
+    >
+      <SidebarBody items={items} user={user} onLogout={async () => { await logout(); navigate("/login"); }} />
     </aside>
+  );
+}
+
+// Mobile drawer — opens via hamburger button in Topbar
+export function MobileSidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const allowed = new Set(user?.effective_permissions?.modules || ["dashboard"]);
+  const items = NAV.filter((n) => allowed.has(n.module));
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <button
+          aria-label="Open menu"
+          data-testid="mobile-menu-btn"
+          className="md:hidden h-9 w-9 rounded-md border border-border hover:bg-surface-hover flex items-center justify-center transition"
+        >
+          <Menu size={18} strokeWidth={1.75} />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="left" className="p-0 bg-zinc-950 text-zinc-200 border-zinc-800 w-72 flex flex-col" data-testid="mobile-sidebar">
+        <SheetHeader className="sr-only"><SheetTitle>Navigation</SheetTitle></SheetHeader>
+        <SidebarBody
+          items={items}
+          user={user}
+          onLogout={async () => { await logout(); navigate("/login"); }}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }

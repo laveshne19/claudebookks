@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
+import { MobileSidebar } from "./Sidebar";
 
 export default function Topbar({ title, subtitle }) {
   const { theme, toggle } = useTheme();
@@ -19,10 +20,13 @@ export default function Topbar({ title, subtitle }) {
 
   return (
     <header className="h-14 flex items-center justify-between border-b border-border bg-surface/60 backdrop-blur px-4 md:px-6 sticky top-0 z-30" data-testid="topbar">
-      <div className="min-w-0">
-        <div className="flex items-center gap-3">
-          <h1 className="font-display text-lg md:text-xl font-bold tracking-tight truncate" data-testid="page-title">{title}</h1>
-          {subtitle && <span className="hidden sm:inline text-xs text-muted-foreground font-mono uppercase tracking-wider">// {subtitle}</span>}
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <MobileSidebar />
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-lg md:text-xl font-bold tracking-tight truncate" data-testid="page-title">{title}</h1>
+            {subtitle && <span className="hidden sm:inline text-xs text-muted-foreground font-mono uppercase tracking-wider">// {subtitle}</span>}
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-2 md:gap-3">
