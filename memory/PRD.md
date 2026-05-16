@@ -19,6 +19,18 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 4. **Sales Person** — own customers, visits, AI insights · `sales1/2/3@nalanda.com / Sales@123`
 5. **Accounts** — recovery, GST, reconciliation · `accounts@nalanda.com / Accounts@123`
 
+## Round 7 — Beat Day Today + Scheme Management (16 May 2026)
+- ✅ **Beat Day Today** (`/api/beat/today`, `/api/beat/visit`, `/beat` page) — parses each customer's `beat_days` (Mon/Thu, Sat (weekly), Fri (1st & 3rd week), alt) to compute today's stops; ranks by tier × overdue × days-since-visit; admin sees all, sales sees only their assigned customers. "Mark Visited" persists a visit + updates `last_visit_date`.
+- ✅ **Red-box overlay FIXED** — root cause: `Calendar` icon used in Sidebar.jsx without import + `BeatToday` referenced in App.js without import. Plus added a global axios response interceptor in `/app/frontend/src/lib/api.js` that silently swallows `CanceledError` / `ERR_CANCELED` so future component-unmount races never surface as red overlays.
+- ✅ **Scheme Management — full lifecycle** (`scheme_service.py`):
+  - Admin Excel/CSV upload (`POST /api/schemes/upload`) with columns `name, brand, start_date, end_date` + optional `type, description, target_amount, reward, active`. Idempotent upsert by (name+brand+start_date).
+  - Zoho brand pull (`POST /api/schemes/sync-zoho-brands`) — pulls items from Zoho Books `/books/v3/items`, extracts unique brand list, persists for the UI brand dropdown. Falls back to `permissions.ALL_BRANDS` when Zoho not synced.
+  - Progress recompute (`POST /api/schemes/{id}/recompute` and `/recompute-all`) — scans `db.invoices` in the scheme's date window, matches `invoice.brand` (top-level) or line-item brand strings, sums per customer, updates `progress` + `achieved_amount`.
+  - Leaderboard (`GET /api/schemes/{id}/leaderboard`) — top 50 customers with tier badges + % of target.
+  - Frontend (`/app/frontend/src/pages/Schemes.jsx`) — fully rewritten: toolbar with Recompute-all / Sync-Zoho-brands / Upload / New buttons; card grid with progress bar + Leaderboard + Recompute + Delete buttons per scheme; New-scheme dialog with brand dropdown (from Zoho or fallback) and Leaderboard dialog showing top customers.
+- ✅ Bug fix: `POST /api/schemes` no longer leaks Mongo `_id` (was throwing 500 on insert).
+- ✅ Backend tests: 10 new pytest cases in `/app/backend/tests/test_beat_schemes.py` — 100% pass (58/58 across all iterations).
+
 ## Implemented (16 May 2026)
 - ✅ JWT auth with httpOnly cookies + Bearer fallback + brute-force-aware lockout shape
 - ✅ 5 roles + route guards (frontend + backend)
@@ -96,7 +108,16 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - **P2** Background scheduler (APScheduler) running Zoho sync every 30 min once keys are added
 - **P2** Audit logs + device management for sessions
 
-## Next Tasks
+## Next Tasks (priority order, May 2026 onward)
+1. **Push Notification Engine** (P1) — Web Push via FCM for payment reminders, beat reminders, AI alerts.
+2. **WhatsApp / SMS payment reminders** (P1) — `wa.me://` deep link from Customer 360 + Twilio SMS template.
+3. **Capacitor native background GPS** (P1) — wire `@capacitor-community/background-geolocation` for true background tracking when app is closed (mobile build only).
+4. **Refactor** — split `/app/backend/server.py` (now ~1130 lines) into `/app/backend/routes/` modules (auth, customers, dashboards, schemes, beat, location, ai).
+5. **Shopify integration** (P2 — for distributors with retail arm).
+6. **PDF/Excel export** for reports (P2).
+7. **Polish (optional)**: add `data-testid` to scheme dialog inputs, silence Recharts size warnings, add `DialogDescription` for a11y.
+
+## Next Tasks (legacy — kept for reference)
 1. Collect Zoho Books credentials from user, wire `zoho_sync.py` module
 2. Add Excel/CSV upload for historical data
 3. Add Stripe billing (if Nalanda decides to white-label this to other distributors)
