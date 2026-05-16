@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, ShoppingBag, Wallet, Tag, BarChart3,
-  Bell, Settings, LogOut, Building2, Map, Sparkles, Clock
+  Bell, Settings, LogOut, Building2, Map, Sparkles, Clock, Calendar
 } from "lucide-react";
 
 const NAV = [

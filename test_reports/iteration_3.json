@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 3: Tested user's red-box complaint resolution + new Beat Today + Scheme Management features. 10/10 new backend tests pass (TestBeatToday: 4/4, TestSchemes: 6/6). Frontend manual flow via Playwright confirms: (1) NO red 'Uncaught runtime errors' overlay on /beat, /schemes, or any sidebar navigation — user's primary complaint is FIXED, (2) /beat as admin shows 'Today's Beat' heading + Total Stops/Platinum/Diamond/Gold stat cards, (3) /schemes toolbar has all 4 buttons (Recompute all, Sync Zoho brands, Upload Excel/CSV, New scheme), 10 scheme cards with Leaderboard + Recompute + delete buttons each, (4) New Scheme dialog opens with form (Name, Brand combobox populated from /api/schemes/brands fallback, Type Value/Volume, Start, End date pickers, Target, Reward, Description), (5) Leaderboard dialog opens with Target/Achieved KPIs and table, (6) Recompute single button shows success toast, (7) Navneet (sales) /beat shows 90 stops scoped to his assignments and 'Visited' button click changes label to 'Done' + persists via POST /api/beat/visit. Backend recompute correctly handles invoice.brand top-level match. /api/schemes/brands returns fallback list when Zoho not synced. No _id leak in any scheme or visit response.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Create scheme dialog", "issues": ["DialogContent missing Description / aria-describedby — Radix a11y warning in console; UI works but flag for screen reader compliance.", "Form inputs lack data-testid and name attributes (e.g. Name field, Target amount, Reward) — makes automated testing rely on placeholder/label proximity. Recommend adding data-testid='scheme-name-input', 'scheme-brand-select', etc."]},
+      {"screen": "Schemes / dashboards", "issues": ["Recharts width(-1)/height(-1) console warnings persist (carry-over from iter 1/2) — purely cosmetic."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_beat_schemes.py",
+    "/app/test_reports/pytest/beat_schemes_results.xml"
+  ],
+  "action_items": [
+    "Optional: add data-testid attributes to Create-scheme form inputs (name, brand, start_date, end_date, target_amount, reward, description, create-submit) for stronger E2E selectors.",
+    "Optional: add DialogDescription or aria-describedby to Create-scheme + Leaderboard dialogs to silence Radix a11y warning.",
+    "Optional: silence Recharts width/height warnings via ResponsiveContainer minWidth/minHeight."
+  ],
+  "critical_code_review_comments": [
+    "server.py now ~1124 lines — splitting into routers (auth, customers, dashboards, schemes, beat, location, ai) still strongly recommended.",
+    "scheme_service.recompute_scheme_progress correctly resolves customer_name in leaderboard entries (verified — no raw UUIDs leak).",
+    "POST /api/schemes/upload returns {created, updated, skipped, errors} with proper validation — good.",
+    "GET /api/schemes/brands falls back to permissions.ALL_BRANDS when brands collection empty — robust against Zoho refresh-token failure.",
+    "POST /api/beat/visit pops _id before returning — no MongoDB ObjectId leak. last_visit_date persisted on customer doc.",
+    "POST /api/schemes excludes _id via Scheme(**body).model_dump() + explicit pop — clean."
+  ],
+  "updated_files": ["/app/backend/tests/test_beat_schemes.py (new — 10 tests for beat + schemes)"],
+  "success_rate": {
+    "backend": "100% (10/10 new + 23/23 iter1 + 25/25 round2 = 58/58 across all iterations)",
+    "frontend": "100% of user-complaint flows: red-box gone, /beat renders for admin & sales, /schemes full CRUD UI functional, visit marking persists."
+  },
+  "test_credentials": "admin@nalanda.com / Admin@123 (super_admin) and navneet@nalanda.com / Sales@123 (sales, ~268 customers per credentials.md, /beat showed 90 stops today).",
+  "seed_data_creation": "Auto-seed continues. Test created and deleted 2-3 TEST_-prefixed schemes via API; one beat visit recorded for Navneet's first stop (last_visit_date updated). No production data mutated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Red-box overlay issue (missing Calendar icon import in Sidebar.jsx + missing BeatToday import in App.js) is fully resolved — verified across /beat, /schemes, sidebar nav, and post-login pages with both admin and sales users. Beat Today + Scheme Management endpoints and UI are functional end-to-end. The only remaining nits are accessibility/testability polish (data-testid, DialogDescription) and pre-existing Recharts warnings.",
+  "rca of the issue": "Original user complaint was caused by two missing imports: (1) Sidebar.jsx referenced Calendar icon without `import { Calendar } from 'lucide-react'` causing a ReferenceError on Sidebar render which CRA's react-error-overlay surfaced as a red 'Uncaught runtime errors' box; (2) App.js had `<Route path='/beat' element={<BeatToday />}/>` without importing BeatToday — same overlay when navigating to /beat. Both fixes confirmed by the absence of any iframe#webpack-dev-server-client-overlay element across all pages tested. Additionally a global axios response interceptor swallows CanceledError so future unmount-race cancellations won't resurface as overlays."
+}

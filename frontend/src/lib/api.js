@@ -17,6 +17,40 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Globally swallow request-cancellation errors so unmounted-component aborts
+// never bubble up as unhandled rejections (which trigger the red overlay).
+// All real errors still propagate normally.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isCanceled =
+      axios.isCancel?.(error) ||
+      error?.code === "ERR_CANCELED" ||
+      error?.name === "CanceledError" ||
+      error?.name === "AbortError" ||
+      error?.message === "canceled";
+    if (isCanceled) {
+      // Resolve with a sentinel so .then(({data})) won't throw; pages can ignore
+      return new Promise(() => {}); // never settles → caller never sees rejection
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Belt-and-braces: swallow any leaked Axios cancellation at the window level.
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (event) => {
+    const r = event.reason;
+    const isCanceled =
+      axios.isCancel?.(r) ||
+      r?.code === "ERR_CANCELED" ||
+      r?.name === "CanceledError" ||
+      r?.name === "AbortError" ||
+      r?.message === "canceled";
+    if (isCanceled) event.preventDefault();
+  });
+}
+
 export function setToken(token) {
   if (token) localStorage.setItem("nalanda_token", token);
   else localStorage.removeItem("nalanda_token");

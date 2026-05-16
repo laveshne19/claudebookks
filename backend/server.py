@@ -9,7 +9,7 @@ import os
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Query, UploadFile, File
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr
@@ -43,6 +43,10 @@ from zoho_sync import sync_zoho, detect_region_and_org, _credentials_present as 
 from excel_importer import import_all as import_historical
 from mapping_importer import apply_mapping
 from beat_planner import build_today_beat
+from scheme_service import (
+    upload_schemes_from_file, sync_zoho_brands,
+    recompute_scheme_progress, recompute_all_schemes,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -383,6 +387,7 @@ async def list_schemes(user=Depends(get_current_user), active: Optional[bool] = 
 async def create_scheme(body: SchemeCreate, current=Depends(require_roles("super_admin", "admin"))):
     s = Scheme(**body.model_dump()).model_dump()
     await db.schemes.insert_one(s)
+    s.pop("_id", None)
     return s
 
 
@@ -390,6 +395,55 @@ async def create_scheme(body: SchemeCreate, current=Depends(require_roles("super
 async def update_scheme(scheme_id: str, payload: dict, current=Depends(require_roles("super_admin", "admin"))):
     await db.schemes.update_one({"id": scheme_id}, {"$set": payload})
     return await db.schemes.find_one({"id": scheme_id}, {"_id": 0})
+
+
+@api.delete("/schemes/{scheme_id}")
+async def delete_scheme(scheme_id: str, current=Depends(require_roles("super_admin", "admin"))):
+    res = await db.schemes.delete_one({"id": scheme_id})
+    return {"deleted": res.deleted_count}
+
+
+@api.post("/schemes/upload")
+async def upload_schemes(file: UploadFile = File(...), current=Depends(require_roles("super_admin", "admin"))):
+    """Bulk upload schemes via Excel/CSV. Required columns: name, brand, start_date, end_date.
+    Optional: type, description, target_amount, reward, active."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="empty file")
+    res = await upload_schemes_from_file(db, content, file.filename or "")
+    return res
+
+
+@api.post("/schemes/sync-zoho-brands")
+async def sync_zoho_brands_endpoint(current=Depends(require_roles("super_admin", "admin"))):
+    """Pull item brand list from Zoho Books for the scheme creation dropdown."""
+    return await sync_zoho_brands(db)
+
+
+@api.get("/schemes/brands")
+async def get_brand_list(user=Depends(get_current_user)):
+    doc = await db.brands.find_one({"id": "zoho-brands"}, {"_id": 0})
+    if not doc:
+        # Fallback to constant brand list known to the system
+        from permissions import ALL_BRANDS
+        return {"source": "default", "brands": sorted(ALL_BRANDS)}
+    return {"source": doc.get("source", "zoho"), "brands": doc.get("brands", []),
+            "synced_at": doc.get("synced_at")}
+
+
+@api.post("/schemes/{scheme_id}/recompute")
+async def recompute_scheme(scheme_id: str, current=Depends(require_roles("super_admin", "admin", "manager"))):
+    return await recompute_scheme_progress(db, scheme_id)
+
+
+@api.post("/schemes/recompute-all")
+async def recompute_all(current=Depends(require_roles("super_admin", "admin", "manager"))):
+    return await recompute_all_schemes(db)
+
+
+@api.get("/schemes/{scheme_id}/leaderboard")
+async def scheme_leaderboard(scheme_id: str, user=Depends(get_current_user)):
+    return await recompute_scheme_progress(db, scheme_id)
 
 
 # ========== TARGETS ==========

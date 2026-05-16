@@ -19,6 +19,7 @@ import Admin from "@/pages/Admin";
 import Notifications from "@/pages/Notifications";
 import RouteMap from "@/pages/RouteMap";
 import AIRoute from "@/pages/AIRoute";
+import BeatToday from "@/pages/BeatToday";
 import Attendance from "@/pages/Attendance";
 import ViewerDashboard from "@/pages/ViewerDashboard";
 
