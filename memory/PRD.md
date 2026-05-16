@@ -35,6 +35,14 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - ✅ **Notifications** — type-coded list with unread indicators, mark-as-read
 - ✅ Light/Dark theme toggle, persisted to localStorage
 
+## Round 5 — Zoho LIVE Connected (16 May 2026)
+- ✅ **Real Nalanda Enterprises Zoho Books org `60068433004` (Chandigarh, GST-registered) is live**
+- ✅ Refresh token exchanged via Self Client OAuth · region `.in` · auto-detected
+- ✅ **First full sync: 1,764 customers / 373 invoices / 168 payments / 9 credit notes** in 16 seconds
+- ✅ Combined data set: **2,093 customers · 2,667 invoices · ₹1.35 Cr MTD · ₹4.23 Cr outstanding · ₹1.16 Cr overdue** — all from real Zoho data
+- ✅ **30-min auto-sync** running via APScheduler with `last_modified_time` delta — pulls only changes
+- ✅ Admin "Last Runs" panel shows live status of each sync
+
 ## Round 4 — Historical Excel Import LIVE (16 May 2026)
 - ✅ **Real Nalanda data imported**: 5 salespeople (Rohit, Sarabjeet, Navneet, Davinder, Atinder)
 - ✅ **299 real customers** from FY 2025-26 with auto-detected brand preferences
