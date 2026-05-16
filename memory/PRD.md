@@ -35,7 +35,13 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - ✅ **Notifications** — type-coded list with unread indicators, mark-as-read
 - ✅ Light/Dark theme toggle, persisted to localStorage
 
-## Round 2 — Permission System + GPS + PWA + Live AI (16 May 2026)
+## Round 3 — Zoho Live + Capacitor Wrapper (16 May 2026)
+- ✅ **Zoho Books sync engine** (`/app/backend/zoho_sync.py`) — auto-detects region (.in/.com/.eu/.com.au/.jp) and Organization ID; pulls customers, invoices, payments, credit notes; preserves local fields (assigned_to, lat/lng, brand_preferences); idempotent via `zoho_*_id`
+- ✅ **30-min scheduler** now calls Zoho when configured, else local aggregate refresh
+- ✅ **Endpoints**: `POST /api/sync/zoho`, `GET /api/sync/zoho/status`, `POST /api/sync/zoho/detect`, `GET /api/sync/logs`
+- ✅ **Admin UI** Zoho card shows live status (credentials present, region, org, schedule) + last sync runs
+- ✅ **Capacitor mobile wrapper** scaffolded at `/app/mobile/` — `capacitor.config.json`, `package.json` with `@capacitor-community/background-geolocation`, build scripts, `locationBootstrap.js`, and a complete `README.md` with build instructions for Android Studio + Xcode
+- ⏳ **Zoho refresh token rejected** (`invalid_code` on .in region) — user's token appears to be either an authorization code (one-time) or has wrong scope. Step-by-step regeneration guide at `/app/memory/zoho_setup.md` — once a valid `ZohoBooks.fullaccess.all` refresh token is supplied, the live sync activates instantly.
 - ✅ **Granular permissions** per user (modules, brands, view_scope, customer_visibility, can_edit/create/export/manage_users) — fully editable by admin via Permissions dialog
 - ✅ **Viewer role** for external brand partners — `boat@nalanda.com / Boat@123` sees ONLY daily Boat sales totals, no customer names, no other modules
 - ✅ **Silent GPS attendance** — `useSilentLocationPing` posts location every 5 min while app open; no UI/notification; auto check-in/out; admin sees attendance roll-call + live locations

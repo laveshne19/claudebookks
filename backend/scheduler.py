@@ -70,10 +70,26 @@ def start_scheduler(db):
     if scheduler:
         return scheduler
     scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
-    # Every hour at minute 5
-    scheduler.add_job(refresh_customer_aggregates, "interval", hours=1, args=[db], id="refresh_aggregates", next_run_time=None)
+
+    async def hourly_job():
+        # If Zoho is configured, run a Zoho sync; otherwise refresh local aggregates
+        try:
+            import os
+            zoho_ready = bool(os.environ.get("ZOHO_CLIENT_ID") and os.environ.get("ZOHO_CLIENT_SECRET") and os.environ.get("ZOHO_REFRESH_TOKEN"))
+            if zoho_ready:
+                from zoho_sync import sync_zoho
+                cfg = await db.config.find_one({"key": "zoho"}, {"_id": 0})
+                if cfg and cfg.get("region") and cfg.get("organization_id"):
+                    await sync_zoho(db, modified_since_hours=2)
+                    return
+            await refresh_customer_aggregates(db)
+        except Exception as e:
+            logger.exception("Scheduled job failed: %s", e)
+
+    # Every 30 minutes — pulls live Zoho data or refreshes aggregates
+    scheduler.add_job(hourly_job, "interval", minutes=30, id="refresh_aggregates", next_run_time=None)
     scheduler.start()
-    logger.info("Scheduler started — hourly aggregate refresh")
+    logger.info("Scheduler started — 30-min sync (Zoho if configured, else local aggregates)")
     return scheduler
 
 

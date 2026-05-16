@@ -1,0 +1,29 @@
+{
+  "name": "nalanda-erp-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native mobile wrapper (iOS + Android) for Nalanda Enterprises ERP. Adds true background GPS, push notifications, biometric login.",
+  "scripts": {
+    "sync": "cap sync",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios",
+    "add:android": "cap add android",
+    "add:ios": "cap add ios",
+    "build:web": "cd ../frontend && yarn build",
+    "build:android": "yarn build:web && cap sync android && cd android && ./gradlew assembleRelease",
+    "build:ios": "yarn build:web && cap sync ios && echo 'Open Xcode and Archive: yarn open:ios'",
+    "run:android": "yarn build:web && cap sync android && cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/push-notifications": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.2",
+    "@capacitor/status-bar": "^6.0.1",
+    "@capacitor-community/background-geolocation": "^1.2.20"
+  }
+}

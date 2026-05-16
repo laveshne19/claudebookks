@@ -39,6 +39,7 @@ from ai_service import get_or_generate_insights
 from ai_planner import generate_route_plan, generate_performance_analysis
 from seed_data import seed_database
 from scheduler import start_scheduler, stop_scheduler, refresh_customer_aggregates
+from zoho_sync import sync_zoho, detect_region_and_org, _credentials_present as zoho_creds_present
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -79,6 +80,8 @@ async def on_startup():
     await db.location_pings.create_index("user_id")
     await db.location_pings.create_index("timestamp")
     await db.attendance.create_index([("user_id", 1), ("date", 1)], unique=True)
+    await db.credit_notes.create_index("id")
+    await db.config.create_index("key", unique=True)
 
     # seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@nalanda.com").lower()
@@ -736,25 +739,45 @@ async def report_productivity(user=Depends(get_current_user)):
     return sorted(result, key=lambda x: -x["pct"])
 
 
-# ========== ZOHO SYNC (stub for now) ==========
+# ========== ZOHO SYNC (LIVE) ==========
 @api.post("/sync/zoho")
 async def trigger_zoho_sync(current=Depends(require_roles("super_admin", "admin"))):
-    """Triggers immediate refresh. When Zoho credentials are configured, this will pull from Zoho.
-    Currently it performs a live aggregate refresh from local invoices/payments."""
+    """Live Zoho Books sync. Pulls customers, invoices, payments, credit notes."""
+    if zoho_creds_present():
+        return await sync_zoho(db)
     try:
         await refresh_customer_aggregates(db)
         log = {
             "id": new_id(),
             "started_at": now_iso(),
             "status": "completed",
-            "type": "manual_refresh",
-            "message": "Aggregates refreshed. Zoho Books credentials not yet configured — once added (ZOHO_CLIENT_ID/SECRET/REFRESH_TOKEN/ORG_ID), this endpoint will sync from Zoho.",
+            "type": "aggregate_refresh",
+            "message": "Local aggregate refresh (Zoho credentials not configured yet).",
         }
     except Exception as e:
         log = {"id": new_id(), "started_at": now_iso(), "status": "failed", "message": str(e)}
     await db.sync_logs.insert_one(log)
     log.pop("_id", None)
     return log
+
+
+@api.get("/sync/zoho/status")
+async def zoho_status(current=Depends(require_roles("super_admin", "admin"))):
+    cfg = await db.config.find_one({"key": "zoho"}, {"_id": 0}) or {}
+    return {
+        "credentials_present": zoho_creds_present(),
+        "region": cfg.get("region"),
+        "organization_id": cfg.get("organization_id"),
+        "organization_name": cfg.get("organization_name"),
+        "all_organizations": cfg.get("organizations", []),
+        "detected_at": cfg.get("detected_at"),
+    }
+
+
+@api.post("/sync/zoho/detect")
+async def zoho_detect(current=Depends(require_roles("super_admin", "admin"))):
+    """Probe regions, detect org id, save to config."""
+    return await detect_region_and_org(db)
 
 
 @api.get("/sync/logs")

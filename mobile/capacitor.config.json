@@ -1,0 +1,56 @@
+{
+  "appId": "com.nalanda.erp",
+  "appName": "Nalanda ERP",
+  "webDir": "../frontend/build",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://sales-force-hub-9.preview.emergentagent.com",
+    "cleartext": false,
+    "allowNavigation": [
+      "*.emergentagent.com",
+      "openstreetmap.org",
+      "*.openstreetmap.org",
+      "fonts.googleapis.com",
+      "api.fontshare.com",
+      "fonts.gstatic.com"
+    ]
+  },
+  "plugins": {
+    "BackgroundGeolocation": {
+      "stationaryRadius": 25,
+      "distanceFilter": 30,
+      "interval": 300000,
+      "fastestInterval": 60000,
+      "activitiesInterval": 10000,
+      "stopOnTerminate": false,
+      "startOnBoot": true,
+      "notificationTitle": "Nalanda",
+      "notificationText": "Active",
+      "notificationIconColor": "#FF4D00"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": true,
+      "backgroundColor": "#09090B",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#09090B",
+      "overlaysWebView": false
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "release.keystore",
+      "keystoreAlias": "nalanda-release"
+    }
+  },
+  "ios": {
+    "scheme": "Nalanda ERP",
+    "contentInset": "automatic"
+  }
+}

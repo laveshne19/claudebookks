@@ -20,6 +20,8 @@ export default function Admin() {
   const [permsTarget, setPermsTarget] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [zohoStatus, setZohoStatus] = useState(null);
+  const [zohoLogs, setZohoLogs] = useState([]);
 
   useEffect(() => {
     refresh();
@@ -30,6 +32,8 @@ export default function Admin() {
     api.get("/users").then(({ data }) => setUsers(data));
     api.get("/attendance/today").then(({ data }) => setAttendance(data)).catch(() => {});
     api.get("/location/latest").then(({ data }) => setLocations(data)).catch(() => {});
+    api.get("/sync/zoho/status").then(({ data }) => setZohoStatus(data)).catch(() => {});
+    api.get("/sync/logs").then(({ data }) => setZohoLogs(data.slice(0, 5))).catch(() => {});
   }
 
   async function addUser() {
@@ -48,12 +52,31 @@ export default function Admin() {
     setSyncing(true);
     try {
       const { data } = await api.post("/sync/zoho");
-      toast.success(`Sync ${data.status}`, { description: data.message });
+      if (data.status === "completed") {
+        const s = data.synced || {};
+        toast.success("Zoho sync complete", { description: `Customers: ${s.customers || 0} · Invoices: ${s.invoices || 0} · Payments: ${s.payments || 0}` });
+      } else {
+        toast.error(`Sync ${data.status}`, { description: data.message });
+      }
+      refresh();
     } catch (e) {
       toast.error("Sync failed");
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function detectZoho() {
+    setSyncing(true);
+    try {
+      const { data } = await api.post("/sync/zoho/detect");
+      if (data.ok) {
+        toast.success("Zoho connected", { description: `${data.organization_name} · region ${data.region}` });
+      } else {
+        toast.error("Detect failed", { description: data.error });
+      }
+      refresh();
+    } finally { setSyncing(false); }
   }
 
   if (!data) return <AppLayout title="Admin"><div className="text-sm text-muted-foreground">Loading…</div></AppLayout>;
@@ -109,20 +132,50 @@ export default function Admin() {
           </table>
         </div>
 
-        <div className="bg-surface border border-border rounded-lg p-5">
+        <div className="bg-surface border border-border rounded-lg p-5" data-testid="zoho-sync-card">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono mb-3">// ZOHO BOOKS SYNC</div>
           <p className="text-xs text-muted-foreground mb-3">
-            Auto-sync every 30 min. Connects ledgers, invoices, payments &amp; outstanding from Zoho Books.
+            Live 30-min auto-sync from Zoho Books — customers, invoices, payments, credit notes.
           </p>
-          <Button onClick={triggerSync} disabled={syncing} className="w-full" data-testid="trigger-sync-btn">
-            <RefreshCw size={14} className={`mr-1.5 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing…" : "Trigger sync now"}
-          </Button>
-          <div className="mt-4 pt-4 border-t border-border space-y-2 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className="font-mono text-warning">CREDENTIALS PENDING</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Interval</span><span className="font-mono">30 min</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Mode</span><span className="font-mono">Seeded data</span></div>
+          <div className="flex gap-2">
+            <Button onClick={triggerSync} disabled={syncing} className="flex-1" data-testid="trigger-sync-btn">
+              <RefreshCw size={14} className={`mr-1.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "Sync now"}
+            </Button>
+            <Button onClick={detectZoho} disabled={syncing} variant="outline" data-testid="detect-zoho-btn">Detect</Button>
           </div>
+          <div className="mt-4 pt-4 border-t border-border space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Credentials</span>
+              <span className={`font-mono ${zohoStatus?.credentials_present ? "text-success" : "text-warning"}`}>
+                {zohoStatus?.credentials_present ? "● PRESENT" : "○ MISSING"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Region</span>
+              <span className="font-mono">{zohoStatus?.region || "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Organization</span>
+              <span className="font-mono truncate max-w-[140px]" title={zohoStatus?.organization_name}>{zohoStatus?.organization_name || "Not detected"}</span>
+            </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Schedule</span><span className="font-mono">30 min</span></div>
+          </div>
+          {zohoLogs.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono mb-2">// LAST RUNS</div>
+              <ul className="space-y-1.5">
+                {zohoLogs.map((l) => (
+                  <li key={l.id} className="text-[11px] flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1 shrink-0 ${l.status === "completed" ? "text-success" : l.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" /> {l.status}
+                    </span>
+                    <span className="text-muted-foreground font-mono truncate flex-1">{l.message || ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 
