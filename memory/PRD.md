@@ -35,10 +35,20 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - ✅ **Notifications** — type-coded list with unread indicators, mark-as-read
 - ✅ Light/Dark theme toggle, persisted to localStorage
 
+## Round 2 — Permission System + GPS + PWA + Live AI (16 May 2026)
+- ✅ **Granular permissions** per user (modules, brands, view_scope, customer_visibility, can_edit/create/export/manage_users) — fully editable by admin via Permissions dialog
+- ✅ **Viewer role** for external brand partners — `boat@nalanda.com / Boat@123` sees ONLY daily Boat sales totals, no customer names, no other modules
+- ✅ **Silent GPS attendance** — `useSilentLocationPing` posts location every 5 min while app open; no UI/notification; auto check-in/out; admin sees attendance roll-call + live locations
+- ✅ **AI Route Planner** (`/api/ai/route-plan`) — Claude Sonnet 4.5 ranks customers by overdue × opportunity × area cluster using LIVE data, returns ordered stops with reason/objective/suggested time
+- ✅ **AI Performance Coach** (`/api/ai/performance`) — Claude analyses LIVE 30-day metrics → rating + strengths + gaps + concrete next-actions + predicted MTD-end %
+- ✅ **PWA** — manifest.json + service-worker + icons → installable on iOS Safari & Android Chrome (Add to Home Screen)
+- ✅ **Hourly scheduler** (APScheduler) — re-aggregates customer outstanding/overdue every 60 min so dashboard stays live even before Zoho is wired
+- ✅ **Permission-aware sidebar** — items filtered by `effective_permissions.modules`
+
 ## Tested
-- ✅ 23/23 backend pytest cases (auth, customers, dashboards, reports, AI insights, role guards)
-- ✅ All frontend pages render with seeded data
-- ✅ AI insights endpoint successfully calls Claude Sonnet 4.5 and returns valid 8-key JSON, cached for 6 hours
+- ✅ 48/48 backend pytest cases (23 iter1 + 25 round2)
+- ✅ All frontend flows verified including Boat viewer (only Dashboard visible, totals-only view), AI Route map+stops, AI Performance card, Admin permissions dialog, Attendance panels
+- ✅ Claude Sonnet 4.5 verified producing live, data-grounded text (route reasoning, performance coaching, customer insights)
 
 ## Backlog (P1/P2 — Phase 2)
 - **P1** Live Zoho Books OAuth sync engine (currently stub — endpoint ready, awaits `ZOHO_CLIENT_ID/SECRET/REFRESH_TOKEN/ORG_ID` in .env)

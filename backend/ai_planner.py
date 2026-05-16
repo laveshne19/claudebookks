@@ -66,7 +66,7 @@ Limit plan to {max_stops} stops, prefer geographic clustering."""
             api_key=api_key,
             session_id=f"route-{user['id']}-{datetime.now(timezone.utc).strftime('%Y%m%d')}",
             system_message=system_message,
-        ).with_model("anthropic", "claude-sonnet-4-5-20250929").with_max_tokens(2000)
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
 
         response = await chat.send_message(UserMessage(text=user_prompt))
         text = response.strip()
@@ -168,7 +168,7 @@ Return JSON:
             api_key=api_key,
             session_id=f"perf-{user['id']}-{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
             system_message=system_message,
-        ).with_model("anthropic", "claude-sonnet-4-5-20250929").with_max_tokens(1200)
+        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
         response = await chat.send_message(UserMessage(text=user_prompt))
         text = response.strip()
         if text.startswith("```"):
