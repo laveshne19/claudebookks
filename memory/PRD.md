@@ -35,7 +35,17 @@ Swiss / Neo-Tactical B2B — Signal Orange `#FF4D00` primary, always-dark obsidi
 - ✅ **Notifications** — type-coded list with unread indicators, mark-as-read
 - ✅ Light/Dark theme toggle, persisted to localStorage
 
-## Round 3 — Zoho Live + Capacitor Wrapper (16 May 2026)
+## Round 4 — Historical Excel Import LIVE (16 May 2026)
+- ✅ **Real Nalanda data imported**: 5 salespeople (Rohit, Sarabjeet, Navneet, Davinder, Atinder)
+- ✅ **299 real customers** from FY 2025-26 with auto-detected brand preferences
+- ✅ **2,067 sales orders / 7,121 line items** ingested via `/app/backend/excel_importer.py`
+- ✅ **₹9.54 Crore historical sales** captured · Top brands: Amazon ₹3.31Cr, Boat ₹2.95Cr, Logitech ₹1.29Cr, Swiss Military ₹46L, Fireboltt ₹43L, Noise ₹38L
+- ✅ Brand auto-detection across Boat / Fireboltt / Noise / Logitech / Amazon / Swiss Military / Mivi / Toreto / Portronics / Ambrane / Syska / JBL / Samsung
+- ✅ Idempotent re-runs · `POST /api/import/historical?force=false`
+- ✅ Dashboard MTD/brand-split now falls back gracefully to last-90 / all-time when current month is empty
+- ✅ Claude AI now produces insights grounded in real data: "Raju Traders is a high-value customer (₹5.77L lifetime) with excellent payment discipline—69% Boat preference"
+
+## Round 3 — Zoho Live Engine + Capacitor Wrapper (16 May 2026)
 - ✅ **Zoho Books sync engine** (`/app/backend/zoho_sync.py`) — auto-detects region (.in/.com/.eu/.com.au/.jp) and Organization ID; pulls customers, invoices, payments, credit notes; preserves local fields (assigned_to, lat/lng, brand_preferences); idempotent via `zoho_*_id`
 - ✅ **30-min scheduler** now calls Zoho when configured, else local aggregate refresh
 - ✅ **Endpoints**: `POST /api/sync/zoho`, `GET /api/sync/zoho/status`, `POST /api/sync/zoho/detect`, `GET /api/sync/logs`

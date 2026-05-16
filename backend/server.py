@@ -40,6 +40,7 @@ from ai_planner import generate_route_plan, generate_performance_analysis
 from seed_data import seed_database
 from scheduler import start_scheduler, stop_scheduler, refresh_customer_aggregates
 from zoho_sync import sync_zoho, detect_region_and_org, _credentials_present as zoho_creds_present
+from excel_importer import import_all as import_historical
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -504,11 +505,24 @@ async def dashboard_sales(user=Depends(get_current_user)):
     # MTD sales (current month)
     month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     mtd_sales = sum(i["amount"] for i in invoices if i.get("date") and i["date"] >= month_start.isoformat())
+    if mtd_sales == 0 and invoices:
+        ninety = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+        mtd_sales = sum(i["amount"] for i in invoices if i.get("date") and i["date"] >= ninety)
 
-    # brand split
+    # brand split — MTD, fallback to last-90, fallback to all-time
     brand_split = {}
     for inv in invoices:
         if inv.get("date") and inv["date"] >= month_start.isoformat():
+            b = inv.get("brand", "Other")
+            brand_split[b] = brand_split.get(b, 0) + inv["amount"]
+    if not brand_split:
+        ninety = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+        for inv in invoices:
+            if inv.get("date") and inv["date"] >= ninety:
+                b = inv.get("brand", "Other")
+                brand_split[b] = brand_split.get(b, 0) + inv["amount"]
+    if not brand_split:
+        for inv in invoices:
             b = inv.get("brand", "Other")
             brand_split[b] = brand_split.get(b, 0) + inv["amount"]
 
@@ -778,6 +792,12 @@ async def zoho_status(current=Depends(require_roles("super_admin", "admin"))):
 async def zoho_detect(current=Depends(require_roles("super_admin", "admin"))):
     """Probe regions, detect org id, save to config."""
     return await detect_region_and_org(db)
+
+
+@api.post("/import/historical")
+async def import_historical_endpoint(force: bool = False, current=Depends(require_roles("super_admin", "admin"))):
+    """Import 5 Excel files from /app/data/imports/. Idempotent unless force=true."""
+    return await import_historical(db, force=force)
 
 
 @api.get("/sync/logs")
