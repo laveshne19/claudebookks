@@ -114,11 +114,80 @@ class DhanData:
         return out
 
 
-def build_provider(settings) -> "SyntheticData | DhanData":
-    """Pick a data provider based on configuration."""
+class YFinanceData:
+    """Free real NSE prices via Yahoo Finance (yfinance). No API key.
+
+    Used as the default paper-mode feed so paper trading runs on real (delayed)
+    market prices. Requires internet access to Yahoo Finance from the host.
+    Quotes are ~15 min delayed — fine for paper testing, not for live HFT.
+    """
+
+    name = "yfinance (NSE, delayed)"
+
+    def __init__(self, symbols: list[str]):
+        import yfinance as yf  # imported lazily so the dep is optional
+
+        self._yf = yf
+        self._symbols = symbols
+        self._ymap = {s: f"{s}.NS" for s in symbols}  # NSE suffix
+        self._rev = {v: k for k, v in self._ymap.items()}
+        self.history = PriceHistory()
+        self._warmup()
+
+    def _warmup(self) -> None:
+        """Seed indicator history with recent intraday closes. Raises if no
+        data comes back, so build_provider can fall back to synthetic."""
+        tickers = list(self._ymap.values())
+        df = self._yf.download(
+            tickers=tickers, period="5d", interval="15m",
+            group_by="ticker", auto_adjust=True, progress=False, threads=True,
+        )
+        got_any = False
+        for ysym in tickers:
+            try:
+                closes = df[ysym]["Close"].dropna().tolist() if len(tickers) > 1 else df["Close"].dropna().tolist()
+            except (KeyError, TypeError):
+                closes = []
+            sym = self._rev[ysym]
+            for c in closes[-120:]:
+                self.history.push(sym, float(c))
+                got_any = True
+        if not got_any:
+            raise RuntimeError("yfinance returned no data for the configured symbols")
+
+    def quotes(self, symbols: list[str]) -> dict[str, Quote]:
+        out: dict[str, Quote] = {}
+        tickers = [self._ymap[s] for s in symbols if s in self._ymap]
+        try:
+            df = self._yf.download(
+                tickers=tickers, period="1d", interval="1m",
+                group_by="ticker", auto_adjust=True, progress=False, threads=True,
+            )
+        except Exception:
+            return {}
+        for ysym in tickers:
+            try:
+                series = df[ysym]["Close"].dropna() if len(tickers) > 1 else df["Close"].dropna()
+                if series.empty:
+                    continue
+                ltp = round(float(series.iloc[-1]), 2)
+            except (KeyError, TypeError, IndexError):
+                continue
+            if ltp > 0:
+                sym = self._rev[ysym]
+                self.history.push(sym, ltp)
+                out[sym] = Quote(symbol=sym, ltp=ltp)
+        return out
+
+
+def build_provider(settings) -> "SyntheticData | DhanData | YFinanceData":
+    """Pick a data provider based on configuration.
+
+    * live + dhan + security_map -> real Dhan feed
+    * paper + PAPER_DATA_SOURCE=live -> real yfinance feed (fallback: synthetic)
+    * otherwise -> synthetic random walk
+    """
     if settings.effective_mode == "live" and settings.broker == "dhan":
-        # In live mode we need a security_map; if absent, fall back to synthetic
-        # so the engine still runs (but logs paper, never live, prices).
         import os, json
 
         raw = os.getenv("SECURITY_MAP", "")
@@ -128,4 +197,13 @@ def build_provider(settings) -> "SyntheticData | DhanData":
             security_map = {}
         if security_map:
             return DhanData(settings.dhan_client_id, settings.dhan_access_token, security_map)
+
+    if settings.paper_data_source == "live":
+        try:
+            return YFinanceData(settings.symbols)
+        except Exception:
+            if not settings.allow_synthetic_feed:
+                raise
+            # fall through to synthetic
+
     return SyntheticData(settings.symbols)

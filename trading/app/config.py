@@ -88,6 +88,9 @@ class Settings:
     autostart: bool = _get_bool("AUTOSTART", False)
     # Use synthetic price feed when no real market data source is configured.
     allow_synthetic_feed: bool = _get_bool("ALLOW_SYNTHETIC_FEED", True)
+    # Paper-mode data feed: "live" = real NSE prices via yfinance (default),
+    # "synthetic" = offline random walk. Live needs internet to Yahoo Finance.
+    paper_data_source: str = os.getenv("PAPER_DATA_SOURCE", "live").strip().lower()
 
     @property
     def live_ready(self) -> bool:

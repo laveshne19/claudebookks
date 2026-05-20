@@ -58,9 +58,18 @@ cp .env.example .env
 ./.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
-With no credentials it uses a **synthetic price feed** so the engine, dashboard,
-and trade log all work offline. Use the dashboard's **Start**, **Step once**,
-and **PANIC** buttons; ask Claude for a daily summary (needs `ANTHROPIC_API_KEY`).
+Paper mode trades on **real (≈15-min delayed) NSE prices** via Yahoo Finance —
+no API key, no broker account needed (`PAPER_DATA_SOURCE=live`, the default). If
+the host can't reach Yahoo, it automatically falls back to a **synthetic** price
+feed so the engine, dashboard, and trade log still work offline. Set
+`PAPER_DATA_SOURCE=synthetic` to force the offline feed for demos.
+
+Use the dashboard's **Start**, **Step once**, and **PANIC** buttons; ask Claude
+for a daily summary (needs `ANTHROPIC_API_KEY`).
+
+> Note: paper mode is the right way to "run it just for yourself" first — real
+> prices, simulated fills, zero financial risk. Let it run for a few sessions
+> and review the trade log before considering live capital.
 
 ## Configuration
 
