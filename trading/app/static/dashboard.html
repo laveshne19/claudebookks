@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto-Trader · NSE</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot" id="liveDot"></span>
+      <h1>Auto-Trader <span class="muted">· NSE</span></h1>
+    </div>
+    <div class="mode-badges">
+      <span class="badge" id="modeBadge">mode</span>
+      <span class="badge" id="dataBadge">data</span>
+      <span class="badge" id="marketBadge">market</span>
+    </div>
+    <div class="controls">
+      <button id="btnStart" class="btn green">Start</button>
+      <button id="btnStop" class="btn">Stop</button>
+      <button id="btnStep" class="btn">Step once</button>
+      <button id="btnPanic" class="btn red">PANIC · flatten all</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="kpis">
+      <div class="kpi"><label>Equity</label><b id="kpiEquity">—</b></div>
+      <div class="kpi"><label>Cash</label><b id="kpiCash">—</b></div>
+      <div class="kpi"><label>Day P&L</label><b id="kpiPnl">—</b></div>
+      <div class="kpi"><label>Open positions</label><b id="kpiPositions">—</b></div>
+      <div class="kpi"><label>Strategy</label><b id="kpiStrategy">—</b></div>
+    </section>
+
+    <section class="warn" id="blockBanner" hidden></section>
+
+    <div class="grid">
+      <section class="card span2">
+        <h2>Equity curve</h2>
+        <canvas id="equityChart" height="110"></canvas>
+      </section>
+
+      <section class="card">
+        <h2>Open positions</h2>
+        <table class="tbl" id="posTable">
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>LTP</th><th>uP&L</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Limits / guardrails</h2>
+        <ul class="limits" id="limitsList"></ul>
+      </section>
+
+      <section class="card span2">
+        <div class="card-head">
+          <h2>Claude analyst</h2>
+          <div>
+            <button class="btn small" id="btnSummary">Daily summary</button>
+            <button class="btn small" id="btnRisk">Risk check</button>
+          </div>
+        </div>
+        <div class="ai-output" id="aiOutput">Ask Claude about your session…</div>
+        <div class="ai-ask">
+          <input id="aiInput" placeholder="Ask: why did it sell SBIN?" />
+          <button class="btn" id="btnAsk">Ask</button>
+        </div>
+      </section>
+
+      <section class="card span4">
+        <h2>Trade log</h2>
+        <table class="tbl" id="tradeTable">
+          <thead><tr><th>Time (IST)</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>P&L</th><th>Reason</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Paper/live automated trading is risky. This tool does not guarantee profit and is not investment advice.
+  </footer>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

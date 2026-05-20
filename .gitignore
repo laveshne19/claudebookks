@@ -106,3 +106,6 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Trading app local test venv
+trading_venv/
