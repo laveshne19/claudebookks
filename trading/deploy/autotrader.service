@@ -1,0 +1,28 @@
+# systemd unit for the Auto-Trader app.
+# Binds to 127.0.0.1 only — Nginx is the public entry point (HTTPS).
+#
+# Install (edit User and paths to match your VPS first):
+#   sudo cp deploy/autotrader.service /etc/systemd/system/autotrader.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now autotrader
+#   sudo systemctl status autotrader        # check it's running
+#   journalctl -u autotrader -f             # live logs
+
+[Unit]
+Description=Auto-Trader (NSE) dashboard + engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Change to the OS user that owns the checkout (NOT root).
+User=ubuntu
+# Absolute path to the trading/ directory of the repo checkout.
+WorkingDirectory=/home/ubuntu/claudebookks/trading
+EnvironmentFile=/home/ubuntu/claudebookks/trading/.env
+ExecStart=/home/ubuntu/claudebookks/trading/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

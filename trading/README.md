@@ -133,17 +133,29 @@ and engages the kill switch.
 
 ## Deploy on your VPS + domain
 
+Full step-by-step (DNS → systemd → Nginx → HTTPS → go-live) is in
+[`deploy/DEPLOY.md`](deploy/DEPLOY.md), with ready-to-use config in `deploy/`:
+- `deploy/autotrader.service` — systemd unit (auto-start on boot, binds to
+  `127.0.0.1:8080`).
+- `deploy/nginx-trade.conf` — Nginx reverse proxy for
+  `trade.nalandaenterprises.com` (proxies the dashboard + the `/ws` WebSocket);
+  `certbot --nginx` adds HTTPS.
+
+Quick version:
+
 ```bash
 # on the VPS
 git clone <repo> && cd <repo>/trading
-cp .env.example .env && nano .env        # fill in keys, keep paper to start
-./run.sh                                  # or use a systemd unit / pm2
+git checkout claude/automated-trading-app-220Zf
+cp .env.example .env                      # keep paper to start
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+sudo cp deploy/autotrader.service /etc/systemd/system/ && sudo systemctl enable --now autotrader
+sudo cp deploy/nginx-trade.conf /etc/nginx/sites-available/ && sudo ln -s ... && sudo systemctl reload nginx
+sudo certbot --nginx -d trade.nalandaenterprises.com
 ```
 
-Put Nginx in front for your domain + HTTPS (Let's Encrypt) and reverse-proxy to
-`127.0.0.1:8080` (proxy the `/ws` WebSocket too). Run `uvicorn` under `systemd`
-so it restarts on reboot. **Add authentication before exposing the dashboard
-publicly** — v1 has no login (it's built for single-user / localhost).
+The dashboard already has a login (single user), so it's safe to expose — just
+change the default password in **⚙ Settings** on first sign-in.
 
 ## Roadmap to multi-user — and the SEBI reality
 
