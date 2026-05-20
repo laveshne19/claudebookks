@@ -1,4 +1,4 @@
-"""FastAPI application: REST API + WebSocket + static dashboard.
+"""FastAPI application: auth + REST + WebSocket + static dashboard.
 
 Run with:  uvicorn app.main:app --host 0.0.0.0 --port 8080
 """
@@ -8,86 +8,61 @@ import asyncio
 import contextlib
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from .ai.claude import ClaudeAnalyst
-from .brokers.dhan import DhanBroker
-from .brokers.paper import PaperBroker
+from . import auth
 from .config import get_settings
 from .db import Database
-from .engine.risk import RiskManager
-from .engine.trader import TradingEngine
-from .market.data import build_provider
-from .strategy.registry import available as strategies_available, get_strategy
+from .runtime import runtime
+from .strategy.registry import available as strategies_available
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 settings = get_settings()
 db = Database(settings.db_path)
-
-# --- broker selection ----------------------------------------------------
-import json as _json
-import os as _os
-
-
-def _security_map() -> dict[str, str]:
-    raw = _os.getenv("SECURITY_MAP", "")
-    try:
-        return _json.loads(raw) if raw else {}
-    except _json.JSONDecodeError:
-        return {}
-
-
-if settings.effective_mode == "live" and settings.broker == "dhan":
-    broker = DhanBroker(settings.dhan_client_id, settings.dhan_access_token, _security_map())
-else:
-    broker = PaperBroker(settings.starting_cash)
-
-data_provider = build_provider(settings)
-strategy = get_strategy(settings.strategy)
-risk = RiskManager(
-    max_trade_value=settings.max_trade_value,
-    max_open_positions=settings.max_open_positions,
-    daily_loss_limit=settings.daily_loss_limit,
-    stop_loss_pct=settings.stop_loss_pct,
-    take_profit_pct=settings.take_profit_pct,
-)
-engine = TradingEngine(
-    broker=broker,
-    data_provider=data_provider,
-    strategy=strategy,
-    risk=risk,
-    db=db,
-    settings=settings,
-)
-analyst = ClaudeAnalyst(settings.anthropic_api_key, settings.anthropic_model)
+runtime.init(db)
 
 scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
+
+# Paths reachable without a session.
+PUBLIC_PREFIXES = ("/static", "/login", "/api/login", "/favicon")
 
 
 def _scheduled_loop():
     try:
-        engine.run_once()
-    except Exception as exc:  # noqa: BLE001 - never let a loop error kill the scheduler
-        engine.last_loop_note = f"loop error: {exc}"
+        runtime.engine.run_once()
+    except Exception as exc:  # noqa: BLE001
+        runtime.engine.last_loop_note = f"loop error: {exc}"
 
 
-app = FastAPI(title="Indian Market Auto-Trader", version="0.1.0")
+app = FastAPI(title="Indian Market Auto-Trader", version="0.2.0")
+
+
+@app.middleware("http")
+async def auth_gate(request: Request, call_next):
+    path = request.url.path
+    if path == "/" or path.startswith("/api") or path == "/settings":
+        if not any(path.startswith(p) for p in PUBLIC_PREFIXES):
+            token = request.cookies.get(auth.COOKIE_NAME, "")
+            if not auth.verify_token(token, runtime.secret_key):
+                if path.startswith("/api"):
+                    return JSONResponse({"detail": "auth required"}, status_code=401)
+                return RedirectResponse("/login", status_code=302)
+    return await call_next(request)
 
 
 @app.on_event("startup")
 def _startup():
     if settings.autostart:
-        engine.start()
+        runtime.engine.start()
     scheduler.add_job(
         _scheduled_loop,
         "interval",
-        seconds=settings.loop_interval_seconds,
+        seconds=runtime.cfg.loop_interval_seconds,
         id="trade_loop",
         max_instances=1,
         coalesce=True,
@@ -107,10 +82,51 @@ class AskBody(BaseModel):
     question: str
 
 
-# --- REST ----------------------------------------------------------------
+class LoginBody(BaseModel):
+    username: str
+    password: str
+
+
+class SettingsBody(BaseModel):
+    updates: dict
+
+
+# --- auth ----------------------------------------------------------------
+@app.post("/api/login")
+def api_login(body: LoginBody, response: Response):
+    c = runtime.cfg
+    if body.username != c.dashboard_user or not auth.verify_password(
+        body.password, c.dashboard_password_hash
+    ):
+        return JSONResponse({"detail": "invalid credentials"}, status_code=401)
+    token = auth.issue_token(body.username, runtime.secret_key)
+    response.set_cookie(
+        auth.COOKIE_NAME, token, httponly=True, samesite="lax", max_age=auth.SESSION_TTL
+    )
+    return {"ok": True}
+
+
+@app.post("/api/logout")
+def api_logout(response: Response):
+    response.delete_cookie(auth.COOKIE_NAME)
+    return {"ok": True}
+
+
+# --- settings ------------------------------------------------------------
+@app.get("/api/settings")
+def api_get_settings():
+    return runtime.safe_config()
+
+
+@app.post("/api/settings")
+def api_set_settings(body: SettingsBody):
+    return runtime.apply_settings(body.updates)
+
+
+# --- engine REST ---------------------------------------------------------
 @app.get("/api/status")
 def api_status():
-    return engine.status()
+    return runtime.engine.status()
 
 
 @app.get("/api/trades")
@@ -126,69 +142,69 @@ def api_equity(limit: int = 500):
 @app.get("/api/config")
 def api_config():
     return {
-        "mode": settings.mode,
-        "effective_mode": settings.effective_mode,
-        "broker": settings.broker,
+        **runtime.safe_config(),
         "strategies": strategies_available(),
-        "ai_enabled": analyst.available,
-        "loop_interval_seconds": settings.loop_interval_seconds,
+        "ai_enabled": getattr(runtime.engine, "analyst", None) and runtime.engine.analyst.available,
     }
 
 
 @app.post("/api/start")
 def api_start():
-    engine.start()
-    return engine.status()
+    runtime.engine.start()
+    return runtime.engine.status()
 
 
 @app.post("/api/stop")
 def api_stop():
-    engine.stop()
-    return engine.status()
+    runtime.engine.stop()
+    return runtime.engine.status()
 
 
 @app.post("/api/step")
 def api_step():
-    """Run one decision loop immediately (ignores running/market-hours gate)."""
-    result = engine.run_once(force=True)
-    return {"result": result, "status": engine.status()}
+    result = runtime.engine.run_once(force=True)
+    return {"result": result, "status": runtime.engine.status()}
 
 
 @app.post("/api/panic")
 def api_panic():
-    closed = engine.panic_flatten()
-    return {"closed": closed, "status": engine.status()}
+    closed = runtime.engine.panic_flatten()
+    return {"closed": closed, "status": runtime.engine.status()}
 
 
 @app.post("/api/market-hours/{flag}")
 def api_market_hours(flag: bool):
-    engine.respect_market_hours = flag
-    return engine.status()
+    runtime.engine.respect_market_hours = flag
+    return runtime.engine.status()
 
 
 @app.get("/api/ai/summary")
 def api_ai_summary():
-    return {"summary": analyst.daily_summary(engine.status(), db.recent_trades(50))}
+    return {"summary": runtime.engine.analyst.daily_summary(runtime.engine.status(), db.recent_trades(50))}
 
 
 @app.get("/api/ai/risk")
 def api_ai_risk():
-    return {"commentary": analyst.risk_commentary(engine.status())}
+    return {"commentary": runtime.engine.analyst.risk_commentary(runtime.engine.status())}
 
 
 @app.post("/api/ai/ask")
 def api_ai_ask(body: AskBody):
-    return {"answer": analyst.ask(body.question, engine.status(), db.recent_trades(50))}
+    return {"answer": runtime.engine.analyst.ask(body.question, runtime.engine.status(), db.recent_trades(50))}
 
 
-# --- WebSocket: push status every few seconds ----------------------------
+# --- WebSocket -----------------------------------------------------------
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
+    token = websocket.cookies.get(auth.COOKIE_NAME, "")
+    if not auth.verify_token(token, runtime.secret_key):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     try:
         while True:
             await websocket.send_json(
-                {"status": engine.status(), "trades": db.recent_trades(30)}
+                {"status": runtime.engine.status(), "trades": db.recent_trades(30)}
             )
             await asyncio.sleep(2)
     except WebSocketDisconnect:
@@ -198,7 +214,12 @@ async def ws(websocket: WebSocket):
             await websocket.close()
 
 
-# --- Dashboard ------------------------------------------------------------
+# --- pages ---------------------------------------------------------------
+@app.get("/login")
+def login_page():
+    return FileResponse(STATIC_DIR / "login.html")
+
+
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "dashboard.html")

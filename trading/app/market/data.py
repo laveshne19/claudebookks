@@ -188,13 +188,15 @@ def build_provider(settings) -> "SyntheticData | DhanData | YFinanceData":
     * otherwise -> synthetic random walk
     """
     if settings.effective_mode == "live" and settings.broker == "dhan":
-        import os, json
+        security_map = getattr(settings, "security_map", None)
+        if not security_map:
+            import os, json
 
-        raw = os.getenv("SECURITY_MAP", "")
-        try:
-            security_map = json.loads(raw) if raw else {}
-        except json.JSONDecodeError:
-            security_map = {}
+            raw = os.getenv("SECURITY_MAP", "")
+            try:
+                security_map = json.loads(raw) if raw else {}
+            except json.JSONDecodeError:
+                security_map = {}
         if security_map:
             return DhanData(settings.dhan_client_id, settings.dhan_access_token, security_map)
 

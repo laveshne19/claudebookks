@@ -71,9 +71,40 @@ for a daily summary (needs `ANTHROPIC_API_KEY`).
 > prices, simulated fills, zero financial risk. Let it run for a few sessions
 > and review the trade log before considering live capital.
 
+## Login & in-app Settings (no file editing)
+
+The dashboard requires a login. The first login is seeded from `DASHBOARD_USER`
+/ `DASHBOARD_PASSWORD` (default **admin / changeme**) — change it immediately in
+the in-app **⚙ Settings** panel.
+
+Everything else is configured from that Settings panel — **you never edit files
+to add credentials**:
+- **Dhan account**: Client ID, Access Token, and the security_id map.
+- **Claude**: Anthropic API key + model.
+- **Mode**: paper ↔ live. **Strategy**: rules-based or Claude advisor.
+- **Risk guardrails**: per-trade cap, max positions, daily loss limit, stops.
+
+Saved settings persist in the local DB and apply live (no restart). Secret
+fields show as "saved / not set" and are never sent back to the browser; leaving
+a secret field blank keeps the existing value.
+
+## Letting Claude make the trades (`claude_advisor` strategy)
+
+Select **Claude advisor** as the strategy and set your Anthropic key. Claude is
+then given recent prices + indicators per symbol and returns BUY/SELL/HOLD. The
+decision **still passes through every risk guardrail** (sizing, caps, daily loss
+limit, stop-loss/take-profit, kill switch) — it cannot bypass them. To control
+cost/latency it re-decides each symbol every `claude_decision_interval` seconds
+(default 300).
+
+> Letting an LLM drive live orders is inherently risky (latency, cost,
+> hallucination, knowledge cutoff). Run it in **paper mode** first and keep tight
+> limits. Not investment advice.
+
 ## Configuration
 
-All settings live in `.env` (see `.env.example`). Key guardrails:
+Login + first-run defaults live in `.env` (see `.env.example`); everything else
+is in the Settings panel. Key guardrails:
 
 | Setting | Meaning | Default |
 |---|---|---|

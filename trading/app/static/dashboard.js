@@ -5,6 +5,7 @@ const cls = (n) => (n > 0 ? "pos" : n < 0 ? "neg" : "");
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
+  if (r.status === 401) { location.href = "/login"; return {}; }
   return r.json();
 }
 const post = (path, body) =>
@@ -35,6 +36,77 @@ $("btnAsk").onclick = async () => {
   $("aiOutput").textContent = d.answer;
 };
 $("aiInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnAsk").click(); });
+
+$("btnLogout").onclick = async () => { await post("/api/logout"); location.href = "/login"; };
+
+// --- settings modal ---
+const SETTINGS_FIELDS = [
+  "dashboard_user", "mode", "strategy", "symbols", "dhan_client_id",
+  "security_map", "anthropic_model", "claude_decision_interval",
+  "max_trade_value", "max_open_positions", "daily_loss_limit",
+  "starting_cash", "stop_loss_pct", "take_profit_pct",
+];
+
+async function openSettings() {
+  const c = await api("/api/settings");
+  const setv = (k, v) => { const el = $("set_" + k); if (el) el.value = v ?? ""; };
+  setv("dashboard_user", c.dashboard_user);
+  setv("mode", c.mode);
+  setv("strategy", c.strategy);
+  setv("symbols", (c.symbols || []).join(","));
+  setv("dhan_client_id", c.dhan_client_id);
+  setv("security_map", c.security_map && Object.keys(c.security_map).length ? JSON.stringify(c.security_map) : "");
+  setv("anthropic_model", c.anthropic_model);
+  setv("claude_decision_interval", c.claude_decision_interval);
+  setv("max_trade_value", c.max_trade_value);
+  setv("max_open_positions", c.max_open_positions);
+  setv("daily_loss_limit", c.daily_loss_limit);
+  setv("starting_cash", c.starting_cash);
+  setv("stop_loss_pct", c.stop_loss_pct);
+  setv("take_profit_pct", c.take_profit_pct);
+  $("set_dhan_access_token").value = "";
+  $("set_anthropic_api_key").value = "";
+  $("set_dashboard_password").value = "";
+  const pd = $("pill_dhan"); pd.textContent = c.has_dhan_token ? "token saved" : "not set"; pd.className = "pill " + (c.has_dhan_token ? "set" : "");
+  const pc = $("pill_claude"); pc.textContent = c.has_anthropic_key ? "key saved" : "not set"; pc.className = "pill " + (c.has_anthropic_key ? "set" : "");
+  $("setOk").textContent = "";
+  $("settingsOverlay").classList.add("open");
+}
+
+async function saveSettings() {
+  const num = (id) => { const v = $(id).value.trim(); return v === "" ? undefined : Number(v); };
+  const str = (id) => { const v = $(id).value.trim(); return v === "" ? undefined : v; };
+  const updates = {};
+  const put = (k, v) => { if (v !== undefined) updates[k] = v; };
+
+  put("dashboard_user", str("set_dashboard_user"));
+  put("dashboard_password", str("set_dashboard_password")); // blank skipped server-side
+  put("mode", $("set_mode").value);
+  put("strategy", $("set_strategy").value);
+  const syms = str("set_symbols");
+  if (syms) put("symbols", syms.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean));
+  put("dhan_client_id", str("set_dhan_client_id"));
+  put("dhan_access_token", str("set_dhan_access_token"));
+  const sm = str("set_security_map");
+  if (sm) { try { put("security_map", JSON.parse(sm)); } catch { $("setOk").textContent = "Security map is not valid JSON"; return; } }
+  put("anthropic_api_key", str("set_anthropic_api_key"));
+  put("anthropic_model", str("set_anthropic_model"));
+  put("claude_decision_interval", num("set_claude_decision_interval"));
+  put("max_trade_value", num("set_max_trade_value"));
+  put("max_open_positions", num("set_max_open_positions"));
+  put("daily_loss_limit", num("set_daily_loss_limit"));
+  put("starting_cash", num("set_starting_cash"));
+  put("stop_loss_pct", num("set_stop_loss_pct"));
+  put("take_profit_pct", num("set_take_profit_pct"));
+
+  await post("/api/settings", { updates });
+  $("setOk").textContent = "Saved ✓";
+  setTimeout(() => $("settingsOverlay").classList.remove("open"), 700);
+}
+
+$("btnSettings").onclick = openSettings;
+$("btnSettingsClose").onclick = () => $("settingsOverlay").classList.remove("open");
+$("btnSettingsSave").onclick = saveSettings;
 
 // --- equity chart ---
 let chart;

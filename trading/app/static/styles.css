@@ -93,3 +93,41 @@ footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px
   .grid { grid-template-columns: 1fr; }
   .card.span2, .card.span4 { grid-column: span 1; }
 }
+
+/* --- login --- */
+.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 32px; width: 320px; display: flex; flex-direction: column; gap: 12px;
+}
+.login-card h1 { margin: 0; font-size: 22px; }
+.login-card input {
+  background: var(--bg); border: 1px solid var(--line); color: var(--txt);
+  padding: 11px 13px; border-radius: 8px; font-size: 14px;
+}
+.login-card .err { color: var(--red); font-size: 13px; min-height: 16px; }
+.login-card .hint { font-size: 11px; }
+
+/* --- settings modal --- */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: none; align-items: flex-start; justify-content: center; z-index: 50; overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  width: min(560px, 94vw); margin: 40px 0; padding: 22px 24px;
+}
+.modal h2 { margin-top: 0; }
+.modal .row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.modal label { font-size: 12px; color: var(--muted); }
+.modal input, .modal select {
+  background: var(--bg); border: 1px solid var(--line); color: var(--txt);
+  padding: 9px 11px; border-radius: 8px; font-size: 13px; width: 100%;
+}
+.modal .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal .sec-title { color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin: 18px 0 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.set-ok { color: var(--green); font-size: 13px; }
+.pill { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--panel2); color: var(--muted); }
+.pill.set { color: var(--green); }

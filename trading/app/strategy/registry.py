@@ -14,4 +14,5 @@ def get_strategy(name: str) -> Strategy:
 
 
 def available() -> list[str]:
-    return list(_STRATEGIES.keys())
+    # claude_advisor is constructed separately (needs API key) but is selectable.
+    return list(_STRATEGIES.keys()) + ["claude_advisor"]

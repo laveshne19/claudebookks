@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in · Auto-Trader</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="login-body">
+  <form class="login-card" id="loginForm">
+    <h1>Auto-Trader</h1>
+    <p class="muted">Sign in to your trading dashboard</p>
+    <input id="u" placeholder="Username" autocomplete="username" />
+    <input id="p" type="password" placeholder="Password" autocomplete="current-password" />
+    <button class="btn green" type="submit">Sign in</button>
+    <div class="err" id="err"></div>
+    <p class="muted hint">Default login: admin / changeme — change it in Settings after first sign-in.</p>
+  </form>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u.value, password: p.value }),
+      });
+      if (r.ok) location.href = "/";
+      else document.getElementById("err").textContent = "Invalid username or password";
+    });
+  </script>
+</body>
+</html>
