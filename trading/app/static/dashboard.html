@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto-Trader · NSE</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot" id="liveDot"></span>
+      <h1>Auto-Trader <span class="muted">· NSE</span></h1>
+    </div>
+    <div class="mode-badges">
+      <span class="badge" id="modeBadge">mode</span>
+      <span class="badge" id="dataBadge">data</span>
+      <span class="badge" id="marketBadge">market</span>
+    </div>
+    <div class="controls">
+      <button id="btnStart" class="btn green">Start</button>
+      <button id="btnStop" class="btn">Stop</button>
+      <button id="btnStep" class="btn">Step once</button>
+      <button id="btnPanic" class="btn red">PANIC · flatten all</button>
+      <button id="btnSettings" class="btn">⚙ Settings</button>
+      <button id="btnLogout" class="btn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="modal-overlay" id="settingsOverlay">
+    <div class="modal">
+      <h2>Settings</h2>
+
+      <div class="sec-title">Account / Login</div>
+      <div class="two">
+        <div class="row"><label>Dashboard username</label><input id="set_dashboard_user" /></div>
+        <div class="row"><label>New password (blank = keep)</label><input id="set_dashboard_password" type="password" placeholder="••••••" /></div>
+      </div>
+
+      <div class="sec-title">Trading mode &amp; strategy</div>
+      <div class="two">
+        <div class="row"><label>Mode</label>
+          <select id="set_mode"><option value="paper">paper (safe)</option><option value="live">live (real money)</option></select>
+        </div>
+        <div class="row"><label>Strategy</label>
+          <select id="set_strategy"><option value="sma_crossover">SMA crossover (rules)</option><option value="claude_advisor">Claude advisor (AI decides)</option></select>
+        </div>
+      </div>
+      <div class="row"><label>Symbols (comma separated NSE tickers)</label><input id="set_symbols" /></div>
+
+      <div class="sec-title">Dhan account <span class="pill" id="pill_dhan">not set</span></div>
+      <div class="two">
+        <div class="row"><label>Dhan Client ID</label><input id="set_dhan_client_id" /></div>
+        <div class="row"><label>Dhan Access Token (blank = keep)</label><input id="set_dhan_access_token" type="password" placeholder="••••••" /></div>
+      </div>
+      <div class="row"><label>Security map (JSON: ticker → Dhan security_id)</label><input id="set_security_map" placeholder='{"RELIANCE":"2885","TCS":"11536"}' /></div>
+
+      <div class="sec-title">Claude (AI) <span class="pill" id="pill_claude">not set</span></div>
+      <div class="two">
+        <div class="row"><label>Anthropic API key (blank = keep)</label><input id="set_anthropic_api_key" type="password" placeholder="sk-ant-…" /></div>
+        <div class="row"><label>Model</label><input id="set_anthropic_model" /></div>
+      </div>
+      <div class="row"><label>Claude decision interval (seconds, advisor mode)</label><input id="set_claude_decision_interval" type="number" /></div>
+
+      <div class="sec-title">Risk guardrails</div>
+      <div class="two">
+        <div class="row"><label>Max ₹ per trade</label><input id="set_max_trade_value" type="number" /></div>
+        <div class="row"><label>Max open positions</label><input id="set_max_open_positions" type="number" /></div>
+        <div class="row"><label>Daily loss limit ₹</label><input id="set_daily_loss_limit" type="number" /></div>
+        <div class="row"><label>Starting cash ₹ (paper)</label><input id="set_starting_cash" type="number" /></div>
+        <div class="row"><label>Stop-loss (fraction, e.g. 0.015)</label><input id="set_stop_loss_pct" type="number" step="0.001" /></div>
+        <div class="row"><label>Take-profit (fraction, e.g. 0.03)</label><input id="set_take_profit_pct" type="number" step="0.001" /></div>
+      </div>
+
+      <div class="actions">
+        <span class="set-ok" id="setOk"></span>
+        <button class="btn" id="btnSettingsClose">Close</button>
+        <button class="btn green" id="btnSettingsSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="kpis">
+      <div class="kpi"><label>Equity</label><b id="kpiEquity">—</b></div>
+      <div class="kpi"><label>Cash</label><b id="kpiCash">—</b></div>
+      <div class="kpi"><label>Day P&L</label><b id="kpiPnl">—</b></div>
+      <div class="kpi"><label>Open positions</label><b id="kpiPositions">—</b></div>
+      <div class="kpi"><label>Strategy</label><b id="kpiStrategy">—</b></div>
+    </section>
+
+    <section class="warn" id="blockBanner" hidden></section>
+
+    <div class="grid">
+      <section class="card span2">
+        <h2>Equity curve</h2>
+        <canvas id="equityChart" height="110"></canvas>
+      </section>
+
+      <section class="card">
+        <h2>Open positions</h2>
+        <table class="tbl" id="posTable">
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>LTP</th><th>uP&L</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Limits / guardrails</h2>
+        <ul class="limits" id="limitsList"></ul>
+      </section>
+
+      <section class="card span2">
+        <div class="card-head">
+          <h2>Claude analyst</h2>
+          <div>
+            <button class="btn small" id="btnSummary">Daily summary</button>
+            <button class="btn small" id="btnRisk">Risk check</button>
+          </div>
+        </div>
+        <div class="ai-output" id="aiOutput">Ask Claude about your session…</div>
+        <div class="ai-ask">
+          <input id="aiInput" placeholder="Ask: why did it sell SBIN?" />
+          <button class="btn" id="btnAsk">Ask</button>
+        </div>
+      </section>
+
+      <section class="card span4">
+        <h2>Trade log</h2>
+        <table class="tbl" id="tradeTable">
+          <thead><tr><th>Time (IST)</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Status</th><th>P&L</th><th>Reason</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Paper/live automated trading is risky. This tool does not guarantee profit and is not investment advice.
+  </footer>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
