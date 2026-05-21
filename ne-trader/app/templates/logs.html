@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="15">{% endblock %}
+{% block content %}
+  <h3>Log Tail (last 100 lines)</h3>
+  <pre>{% for line in lines %}{{ line }}
+{% else %}No log entries yet.{% endfor %}</pre>
+{% endblock %}

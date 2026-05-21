@@ -1,0 +1,195 @@
+"""Migrate historical trades from a Google Sheets export into the DB.
+
+Google Sheets cannot be read directly, so export your trade log to CSV or
+Excel and run::
+
+    python scripts/import_trades.py path/to/trades.csv [--dry-run]
+
+The importer is column-name tolerant: it lowercases headers and matches common
+aliases (e.g. ``side``/``action``, ``qty``/``quantity``, ``buy_price``/
+``entry``). Imported rows are stored as CLOSED, real-money (paper_mode=0)
+history with reason ``migrated``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import sys
+from pathlib import Path
+from typing import Dict, Optional
+
+# Allow running as a plain script from the ne-trader/ directory.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import pandas as pd  # noqa: E402
+
+from app import database  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
+# Map normalized header aliases -> our schema column.
+ALIASES: Dict[str, str] = {
+    "symbol": "symbol", "ticker": "symbol", "stock": "symbol", "scrip": "symbol",
+    "action": "action", "side": "action", "type": "action",
+    "quantity": "quantity", "qty": "quantity", "shares": "quantity",
+    "entry_price": "entry_price", "entry": "entry_price", "buy_price": "entry_price",
+    "buyprice": "entry_price", "price": "entry_price",
+    "exit_price": "exit_price", "exit": "exit_price", "sell_price": "exit_price",
+    "sellprice": "exit_price",
+    "stop_loss": "stop_loss", "sl": "stop_loss", "stoploss": "stop_loss",
+    "pnl": "pnl", "profit": "pnl", "p&l": "pnl", "pl": "pnl", "net": "pnl",
+    "timestamp": "timestamp", "date": "timestamp", "datetime": "timestamp",
+    "time": "timestamp", "date/time": "timestamp", "date_time": "timestamp",
+    "segment": "segment", "exchange": "exchange",
+    "status": "status", "mode": "mode", "confidence": "confidence",
+    "reason": "reason", "order_id": "kite_order_id", "orderid": "kite_order_id",
+    "order id": "kite_order_id",
+}
+
+
+def _read(path: Path, sheet: Optional[str] = None) -> pd.DataFrame:
+    if path.suffix.lower() in {".xlsx", ".xls"}:
+        return pd.read_excel(path, sheet_name=sheet if sheet else 0)
+    return pd.read_csv(path)
+
+
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    renamed = {}
+    for col in df.columns:
+        key = str(col).strip().lower().replace(" ", "_")
+        if key in ALIASES:
+            renamed[col] = ALIASES[key]
+    return df.rename(columns=renamed)
+
+
+def _to_float(value: object) -> Optional[float]:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    try:
+        return float(str(value).replace(",", "").replace("₹", "").strip())
+    except (ValueError, TypeError):
+        return None
+
+
+def _coerce_confidence(value: object) -> Optional[float]:
+    """Normalize confidence to a 0-100 scale (fractions like 0.72 -> 72)."""
+    conf = _to_float(value)
+    if conf is None:
+        return None
+    return conf * 100.0 if conf <= 1.0 else conf
+
+
+def import_file(path: Path, dry_run: bool = False,
+                db_path: Optional[Path] = None,
+                sheet: Optional[str] = None) -> int:
+    """Import trades from a CSV/Excel file into the ``trades`` table.
+
+    Captures status, mode (paper/live), confidence, reason, and order id when
+    those columns are present; otherwise applies safe defaults (CLOSED, paper).
+
+    Args:
+        path: Path to the export file.
+        dry_run: If True, parse and report but do not write to the DB.
+        db_path: Optional explicit DB path.
+        sheet: Optional worksheet name (Excel only).
+
+    Returns:
+        int: Number of rows imported (or that would be, in dry-run).
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If no ``symbol`` column can be identified.
+    """
+    if not path.exists():
+        raise FileNotFoundError(path)
+    df = _normalize_columns(_read(path, sheet))
+    if "symbol" not in df.columns:
+        raise ValueError(
+            f"Could not find a symbol column. Headers seen: {list(df.columns)}"
+        )
+
+    if not dry_run:
+        database.init_db(db_path)
+
+    imported = 0
+    rows = []
+    for _, r in df.iterrows():
+        symbol = str(r.get("symbol", "")).strip().upper()
+        if not symbol or symbol == "NAN":
+            continue
+        action = str(r.get("action", "BUY")).strip().upper()
+        action = "SELL" if action.startswith("S") else "BUY"
+        qty = _to_float(r.get("quantity")) or 0
+        entry = _to_float(r.get("entry_price")) or 0.0
+
+        status = str(r.get("status", "CLOSED")).strip().upper() or "CLOSED"
+        mode = str(r.get("mode", "PAPER")).strip().upper()
+        paper = 0 if mode.startswith("LIVE") else 1
+        exchange = str(r.get("exchange", "NSE")).strip().upper() or "NSE"
+        segment = str(r.get("segment", "EQ")).strip().upper() or "EQ"
+        order_id = r.get("kite_order_id")
+        order_id = (str(order_id).strip()
+                    if order_id is not None and not pd.isna(order_id) else None)
+        reason_val = r.get("reason")
+        reason = (f"migrated: {str(reason_val).strip()}"
+                  if reason_val is not None and not pd.isna(reason_val)
+                  else "migrated")
+
+        rows.append((
+            str(r.get("timestamp", "")) or None,
+            symbol, exchange, segment, action, int(qty), entry,
+            _to_float(r.get("exit_price")), _to_float(r.get("stop_loss")),
+            _to_float(r.get("pnl")), status, paper,
+            _coerce_confidence(r.get("confidence")), reason, order_id,
+        ))
+        imported += 1
+
+    if dry_run:
+        total_pnl = sum((row[9] or 0.0) for row in rows)
+        live = sum(1 for row in rows if row[11] == 0)
+        logger.info("[DRY-RUN] Would import %d trades from %s (sheet=%s)",
+                    imported, path, sheet or "first")
+        logger.info("  total P&L: %.2f | paper=%d live=%d",
+                    total_pnl, imported - live, live)
+        for row in rows[:5]:
+            logger.info("  sample: %s %s qty=%s entry=%s pnl=%s mode=%s",
+                        row[1], row[4], row[5], row[6], row[9],
+                        "LIVE" if row[11] == 0 else "PAPER")
+        return imported
+
+    with database.get_connection(db_path) as conn:
+        conn.executemany(
+            "INSERT INTO trades(timestamp, symbol, exchange, segment, action, "
+            "quantity, entry_price, exit_price, stop_loss, pnl, status, "
+            "paper_mode, confidence, reason, kite_order_id) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            rows,
+        )
+        conn.commit()
+    logger.info("Imported %d trades from %s", imported, path)
+    return imported
+
+
+def main(argv: Optional[list] = None) -> int:
+    """CLI entry point."""
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    parser = argparse.ArgumentParser(description="Import historical trades")
+    parser.add_argument("file", type=Path, help="CSV or Excel export path")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Parse and report without writing")
+    parser.add_argument("--sheet", default=None,
+                        help="Worksheet name (Excel only), e.g. 'TRADE LOG'")
+    args = parser.parse_args(argv)
+    try:
+        import_file(args.file, dry_run=args.dry_run, sheet=args.sheet)
+    except (FileNotFoundError, ValueError) as exc:
+        logger.error("%s", exc)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

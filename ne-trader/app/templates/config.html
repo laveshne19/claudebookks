@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Configuration</h3>
+  <table>
+    <tr><th>Setting</th><th>Value</th></tr>
+    <tr><td>Mode</td><td>{{ 'PAPER' if cfg.paper_mode else 'LIVE' }}</td></tr>
+    <tr><td>Total Capital</td><td>&#8377;{{ '%.2f'|format(cfg.total_capital) }}</td></tr>
+    <tr><td>Risk Per Trade %</td><td>{{ cfg.risk_per_trade_pct }}</td></tr>
+    <tr><td>Daily Loss Limit %</td><td>{{ cfg.daily_loss_limit_pct }}</td></tr>
+    <tr><td>Min Confidence</td><td>{{ cfg.min_confidence }}</td></tr>
+    <tr><td>Max Open Positions</td><td>{{ cfg.max_open_positions }}</td></tr>
+    <tr><td>Scan Interval (s)</td><td>{{ cfg.scan_interval_seconds }}</td></tr>
+    <tr><td>Claude Overlay</td><td>{{ 'enabled' if cfg.claude_enabled else 'disabled' }}</td></tr>
+  </table>
+
+  <h3 style="margin-top:24px">Edit (saved to DB, applied on next restart)</h3>
+  <form method="post" action="/config">
+    <select name="key">
+      <option value="min_confidence">min_confidence</option>
+      <option value="risk_per_trade_pct">risk_per_trade_pct</option>
+      <option value="daily_loss_limit_pct">daily_loss_limit_pct</option>
+      <option value="max_open_positions">max_open_positions</option>
+    </select>
+    <input type="text" name="value" placeholder="new value" required>
+    <button>Save</button>
+  </form>
+  <p style="color:var(--muted)">Note: LIVE_MODE can only be changed in
+     <code>.env</code> + restart, never from the dashboard.</p>
+
+  {% if db_overrides %}
+  <h3 style="margin-top:24px">DB Overrides</h3>
+  <table><tr><th>Key</th><th>Value</th><th>Updated</th></tr>
+    {% for r in db_overrides %}
+    <tr><td>{{ r.key }}</td><td>{{ r.value }}</td><td>{{ r.updated_at }}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+{% endblock %}

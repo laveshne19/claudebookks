@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}NE Kite Autotrader{% endblock %}</title>
+  <style>
+    :root { --bg:#0f1419; --panel:#1a212b; --fg:#e6edf3; --muted:#8b949e;
+            --green:#3fb950; --red:#f85149; --accent:#58a6ff; --border:#30363d; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+           background:var(--bg); color:var(--fg); font-size:14px; }
+    header { background:var(--panel); padding:12px 20px; border-bottom:1px solid var(--border);
+             display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+    header h1 { font-size:16px; margin:0; }
+    nav a { color:var(--accent); text-decoration:none; margin-right:14px; }
+    nav a:hover { text-decoration:underline; }
+    .badge { padding:2px 8px; border-radius:10px; font-size:12px; }
+    .paper { background:#1f6feb33; color:var(--accent); }
+    .live { background:#f8514933; color:var(--red); }
+    .kill { background:var(--red); color:#fff; }
+    main { padding:20px; max-width:1100px; margin:0 auto; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:14px; margin-bottom:20px; }
+    .card { background:var(--panel); border:1px solid var(--border); border-radius:8px;
+            padding:14px; }
+    .card .label { color:var(--muted); font-size:12px; }
+    .card .value { font-size:22px; margin-top:4px; }
+    table { width:100%; border-collapse:collapse; background:var(--panel);
+            border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+    th { color:var(--muted); font-weight:normal; }
+    .pos { color:var(--green); } .neg { color:var(--red); }
+    form.inline { display:inline; }
+    button { background:var(--accent); color:#0d1117; border:none; padding:8px 14px;
+             border-radius:6px; cursor:pointer; font-family:inherit; }
+    button.danger { background:var(--red); color:#fff; }
+    pre { background:var(--panel); border:1px solid var(--border); border-radius:8px;
+          padding:14px; overflow:auto; white-space:pre-wrap; }
+    input, select { background:#0d1117; color:var(--fg); border:1px solid var(--border);
+                    padding:6px; border-radius:6px; font-family:inherit; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <h1>NE Kite Autotrader</h1>
+    <nav>
+      <a href="/">Dashboard</a><a href="/scans">Scans</a>
+      <a href="/logs">Logs</a><a href="/config">Config</a>
+      <a href="/auth/refresh">Token</a>
+    </nav>
+    {% if paper_mode is defined %}
+      <span class="badge {{ 'paper' if paper_mode else 'live' }}">
+        {{ 'PAPER' if paper_mode else 'LIVE' }}</span>
+    {% endif %}
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

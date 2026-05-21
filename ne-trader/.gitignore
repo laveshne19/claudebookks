@@ -1,0 +1,22 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Database & logs (runtime state)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+logs/*.log
+logs/*.log.*
+
+# Kite token artifacts
+*token.json*
+*credentials.json*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/

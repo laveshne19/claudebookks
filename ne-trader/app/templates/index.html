@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="30">{% endblock %}
+{% block content %}
+  {% if kill_switch %}
+    <p><span class="badge kill">KILL SWITCH ACTIVE</span> Trading halted for the day.</p>
+  {% endif %}
+  <div class="grid">
+    <div class="card"><div class="label">P&amp;L Today</div>
+      <div class="value {{ 'pos' if pnl_today >= 0 else 'neg' }}">
+        &#8377;{{ '%.2f'|format(pnl_today) }}</div></div>
+    <div class="card"><div class="label">P&amp;L All-Time</div>
+      <div class="value {{ 'pos' if pnl_all >= 0 else 'neg' }}">
+        &#8377;{{ '%.2f'|format(pnl_all) }}</div></div>
+    <div class="card"><div class="label">Open Positions</div>
+      <div class="value">{{ open_positions|length }}</div></div>
+    <div class="card"><div class="label">Last Scan</div>
+      <div class="value" style="font-size:13px">{{ last_scan }}</div></div>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <form class="inline" method="post" action="/action/stop">
+      <button class="danger">Stop Bot</button></form>
+    <form class="inline" method="post" action="/action/squareoff"
+          onsubmit="return confirm('Square off ALL open positions now?')">
+      <button class="danger">Square Off All</button></form>
+    <form class="inline" method="post" action="/action/paper"
+          onsubmit="return confirm('Force PAPER mode ON? (cannot enable live here)')">
+      <input type="hidden" name="confirm" value="yes">
+      <button>Force Paper Mode</button></form>
+  </div>
+
+  <h3>Open Positions</h3>
+  <table>
+    <tr><th>Symbol</th><th>Action</th><th>Qty</th><th>Entry</th><th>Stop</th>
+        <th>Conf</th><th>Mode</th></tr>
+    {% for p in open_positions %}
+    <tr><td>{{ p.symbol }}</td><td>{{ p.action }}</td><td>{{ p.quantity }}</td>
+        <td>{{ '%.2f'|format(p.entry_price) }}</td>
+        <td>{{ '%.2f'|format(p.stop_loss or 0) }}</td>
+        <td>{{ '%.0f'|format(p.confidence or 0) }}%</td>
+        <td>{{ 'PAPER' if p.paper_mode else 'LIVE' }}</td></tr>
+    {% else %}<tr><td colspan="7">No open positions.</td></tr>{% endfor %}
+  </table>
+
+  <h3 style="margin-top:24px">Recent Closed Trades</h3>
+  <table>
+    <tr><th>Time</th><th>Symbol</th><th>Action</th><th>Qty</th><th>Entry</th>
+        <th>Exit</th><th>P&amp;L</th></tr>
+    {% for t in recent %}
+    <tr><td>{{ t.timestamp }}</td><td>{{ t.symbol }}</td><td>{{ t.action }}</td>
+        <td>{{ t.quantity }}</td><td>{{ '%.2f'|format(t.entry_price) }}</td>
+        <td>{{ '%.2f'|format(t.exit_price or 0) }}</td>
+        <td class="{{ 'pos' if (t.pnl or 0) >= 0 else 'neg' }}">
+          &#8377;{{ '%.2f'|format(t.pnl or 0) }}</td></tr>
+    {% else %}<tr><td colspan="7">No closed trades yet.</td></tr>{% endfor %}
+  </table>
+{% endblock %}
