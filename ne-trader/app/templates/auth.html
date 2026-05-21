@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Refresh Kite Access Token</h3>
+  <ol>
+    <li>Open the login URL below and log in to Kite.</li>
+    <li>You'll be redirected to a URL containing <code>request_token=...</code>.</li>
+    <li>Paste that <code>request_token</code> value below and submit.</li>
+  </ol>
+  {% if login_url %}
+    <p><a href="{{ login_url }}" target="_blank" rel="noopener">Open Kite login &#8599;</a></p>
+  {% else %}
+    <p style="color:var(--muted)">Login URL unavailable (Kite client not configured).</p>
+  {% endif %}
+  <form method="post" action="/auth/refresh">
+    <input type="text" name="request_token" placeholder="request_token" required
+           style="width:320px">
+    <button>Generate Token</button>
+  </form>
+{% endblock %}

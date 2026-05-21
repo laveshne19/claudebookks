@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="30">{% endblock %}
+{% block content %}
+  <h3>Recent Scans (last 100)</h3>
+  <table>
+    <tr><th>Time</th><th>Symbol</th><th>Decision</th><th>Buy</th><th>Sell</th>
+        <th>Claude</th><th>Indicators</th></tr>
+    {% for s in scans %}
+    <tr><td>{{ s.timestamp }}</td><td>{{ s.symbol }}</td><td>{{ s.decision }}</td>
+        <td>{{ '%.0f'|format(s.buy_score or 0) }}</td>
+        <td>{{ '%.0f'|format(s.sell_score or 0) }}</td>
+        <td>{{ 'yes' if s.claude_used else 'no' }}</td>
+        <td style="font-size:12px;color:var(--muted)">{{ s.indicators_json }}</td></tr>
+    {% else %}<tr><td colspan="7">No scans logged yet.</td></tr>{% endfor %}
+  </table>
+{% endblock %}

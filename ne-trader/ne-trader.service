@@ -1,0 +1,23 @@
+[Unit]
+Description=NE Kite Autotrader (intraday trading bot + dashboard)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust User and paths to match your VPS deployment.
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ne-trader
+# Use the venv interpreter so dependencies resolve correctly.
+ExecStart=/home/ubuntu/ne-trader/.venv/bin/python -m app.main
+# Graceful shutdown: main.py handles SIGTERM to stop the scheduler.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
