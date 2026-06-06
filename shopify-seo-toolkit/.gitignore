@@ -1,0 +1,8 @@
+# Secrets - never commit
+.env
+
+# Generated reports / data
+audit-report.csv
+products-export.json
+out/
+node_modules/
