@@ -1,0 +1,15 @@
+{
+  "name": "gogadget-shopify-seo-toolkit",
+  "version": "1.0.0",
+  "description": "Audit and bulk-optimize Shopify product SEO, GTIN/barcodes, descriptions and metadata for gogadget.co.in",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "audit": "node audit.mjs",
+    "apply": "node apply.mjs",
+    "apply:live": "node apply.mjs --apply"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
