@@ -1,0 +1,123 @@
+{%- comment -%}
+  Sticky Add-to-Cart Bar — Amazon/boAt style
+  ------------------------------------------------------------------
+  Appears fixed at the bottom of the screen as the shopper scrolls past
+  the main buy button, so "Add to Cart" is always one tap away.
+  Boosts mobile conversions noticeably.
+
+  INSTALL: Edit code -> Sections -> Add a new section -> name it
+  "product-sticky-atc" -> paste this whole file -> Save.
+  Then Customize a Product page -> Add section -> "Sticky Add to Cart".
+{%- endcomment -%}
+
+<div class="psab" id="psab-{{ section.id }}" data-sticky-atc hidden>
+  <div class="psab__inner">
+    {%- if product.featured_image -%}
+      <img class="psab__img" src="{{ product.featured_image | image_url: width: 120 }}"
+           alt="{{ product.title | escape }}" width="48" height="48" loading="lazy">
+    {%- endif -%}
+
+    <div class="psab__info">
+      <div class="psab__title">{{ product.title }}</div>
+      <div class="psab__price" data-psab-price>{{ product.selected_or_first_available_variant.price | money }}</div>
+    </div>
+
+    {%- form 'product', product, class: 'psab__form' -%}
+      {%- if product.variants.size > 1 -%}
+        <select name="id" class="psab__variant" data-psab-variant>
+          {%- for v in product.variants -%}
+            <option value="{{ v.id }}" {% unless v.available %}disabled{% endunless %}
+              data-price="{{ v.price | money }}">
+              {{ v.title }}{% unless v.available %} — Sold out{% endunless %}
+            </option>
+          {%- endfor -%}
+        </select>
+      {%- else -%}
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+      {%- endif -%}
+
+      <button type="submit" class="psab__btn"
+        {% unless product.available %}disabled{% endunless %}>
+        {{ product.available | default: false }}
+        {%- if product.available -%}{{ section.settings.btn_label }}{%- else -%}Sold out{%- endif -%}
+      </button>
+    {%- endform -%}
+  </div>
+</div>
+
+<style>
+  #psab-{{ section.id }} {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: #fff; border-top: 1px solid #e6e6e6;
+    box-shadow: 0 -6px 20px rgba(0,0,0,.08);
+    transform: translateY(110%); transition: transform .25s ease;
+  }
+  #psab-{{ section.id }}.is-visible { transform: translateY(0); }
+  #psab-{{ section.id }} .psab__inner {
+    max-width: 1100px; margin: 0 auto; padding: 10px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  #psab-{{ section.id }} .psab__img { border-radius: 8px; object-fit: cover; flex: 0 0 auto; }
+  #psab-{{ section.id }} .psab__info { min-width: 0; flex: 1 1 auto; }
+  #psab-{{ section.id }} .psab__title {
+    font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #psab-{{ section.id }} .psab__price { font-weight: 700; font-size: 1rem; }
+  #psab-{{ section.id }} .psab__form { display: flex; gap: 8px; align-items: center; flex: 0 0 auto; }
+  #psab-{{ section.id }} .psab__variant {
+    padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: .85rem; max-width: 140px;
+  }
+  #psab-{{ section.id }} .psab__btn {
+    background: {{ section.settings.btn_color }}; color: {{ section.settings.btn_text_color }};
+    border: 0; border-radius: 10px; padding: 12px 22px; font-weight: 700; font-size: .95rem;
+    cursor: pointer; white-space: nowrap; transition: filter .15s ease;
+  }
+  #psab-{{ section.id }} .psab__btn:hover { filter: brightness(.93); }
+  #psab-{{ section.id }} .psab__btn[disabled] { background: #bbb; cursor: not-allowed; }
+
+  @media (max-width: 749px) {
+    #psab-{{ section.id }} .psab__title { font-size: .82rem; }
+    #psab-{{ section.id }} .psab__variant { max-width: 96px; }
+    #psab-{{ section.id }} .psab__btn { padding: 12px 16px; }
+  }
+</style>
+
+<script>
+  (function () {
+    var bar = document.getElementById('psab-{{ section.id }}');
+    if (!bar) return;
+    bar.removeAttribute('hidden');
+
+    // Reveal the bar after the shopper scrolls down a bit.
+    function onScroll() {
+      if (window.scrollY > 500) { bar.classList.add('is-visible'); }
+      else { bar.classList.remove('is-visible'); }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // Keep price in sync with the chosen variant.
+    var sel = bar.querySelector('[data-psab-variant]');
+    var price = bar.querySelector('[data-psab-price]');
+    if (sel && price) {
+      sel.addEventListener('change', function () {
+        var opt = sel.options[sel.selectedIndex];
+        if (opt && opt.dataset.price) price.textContent = opt.dataset.price;
+      });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Sticky Add to Cart",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    { "type": "text", "id": "btn_label", "label": "Button text", "default": "Add to Cart" },
+    { "type": "color", "id": "btn_color", "label": "Button color", "default": "#111111" },
+    { "type": "color", "id": "btn_text_color", "label": "Button text color", "default": "#ffffff" }
+  ],
+  "presets": [{ "name": "Sticky Add to Cart" }]
+}
+{% endschema %}
