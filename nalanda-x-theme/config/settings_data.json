@@ -1,12 +1,12 @@
 {
   "current": {
-    "color_ink": "#0A0A0B",
+    "color_ink": "#0B1220",
     "color_bg": "#FFFFFF",
-    "color_surface": "#F6F7F9",
-    "color_accent": "#3D5AFE",
-    "color_accent_2": "#00E5FF",
-    "grad_start": "#3D5AFE",
-    "grad_end": "#9C27FF",
+    "color_surface": "#F6F8FC",
+    "color_accent": "#2563EB",
+    "color_accent_2": "#06B6D4",
+    "grad_start": "#2563EB",
+    "grad_end": "#06B6D4",
     "type_scale": 1.18,
     "page_width": 1320,
     "radius": 18,

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NALANDA X — Live Design Preview · Nalanda Enterprises</title>
+<style>
+  :root{
+    --maxw:1320px; --radius:18px;
+    --ink:#0B1220; --ink-60:rgba(11,18,32,.62); --ink-40:rgba(11,18,32,.4);
+    --bg:#fff; --surface:#F6F8FC; --line:rgba(11,18,32,.10);
+    --accent:#2563EB; --accent-2:#06B6D4;
+    --grad:linear-gradient(120deg,#2563EB,#06B6D4);
+    --grad-navy:linear-gradient(160deg,#0B1220,#1D4ED8);
+    --shadow-2:0 8px 24px rgba(11,18,32,.10),0 2px 6px rgba(11,18,32,.06);
+    --shadow-float:0 24px 60px -18px rgba(11,18,32,.30);
+    --glass:rgba(255,255,255,.65); --blur:saturate(160%) blur(18px);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --fs-display:clamp(2.6rem,6vw,5.4rem);
+  }
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  img{max-width:100%;display:block}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3{line-height:1.04;letter-spacing:-.025em;margin:0 0 .4em;font-weight:800}
+  .wrap{max-width:var(--maxw);margin:auto;padding:0 clamp(16px,4vw,40px)}
+  .section{padding:clamp(48px,7vw,110px) 0}
+  .eyebrow{text-transform:uppercase;letter-spacing:.22em;font-size:.72rem;font-weight:800;color:var(--accent)}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .muted{color:var(--ink-60)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:999px;font-weight:700;font-size:.95rem;border:1px solid transparent;cursor:pointer;background:var(--ink);color:#fff;transition:transform .25s var(--ease),box-shadow .25s,filter .2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);filter:brightness(1.08)}
+  .btn--accent{background:var(--grad)} .btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .glass{background:var(--glass);border:1px solid rgba(255,255,255,.6);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:0 1px 2px rgba(11,18,32,.06)}
+
+  /* header */
+  header{position:sticky;top:0;z-index:90;transition:box-shadow .3s}
+  header.stuck{box-shadow:0 6px 24px rgba(11,18,32,.08)}
+  .bar{display:flex;align-items:center;gap:28px;padding:14px 0}
+  .logo{font-weight:900;font-size:1.35rem;letter-spacing:-.04em}
+  .logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav.menu{display:flex;gap:4px;margin:auto}
+  nav.menu a{padding:10px 14px;border-radius:999px;font-weight:600;font-size:.95rem;transition:background .2s}
+  nav.menu a:hover{background:var(--surface)}
+  .acts{display:flex;gap:6px}
+  .ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:0;background:transparent;cursor:pointer;font-size:1.1rem;transition:background .2s}
+  .ic:hover{background:var(--surface)}
+
+  /* hero */
+  .hero{position:relative;overflow:clip;min-height:clamp(560px,88vh,940px);display:grid;align-items:center}
+  .orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;will-change:transform}
+  .orb1{width:46vw;height:46vw;left:-8%;top:-14%;background:radial-gradient(circle,var(--accent),transparent 70%)}
+  .orb2{width:42vw;height:42vw;right:-8%;bottom:-18%;background:radial-gradient(circle,var(--accent-2),transparent 70%)}
+  .hero__in{position:relative;z-index:2;max-width:760px}
+  .hero h1{font-size:var(--fs-display)}
+  .hero__sub{font-size:clamp(1rem,1.4vw,1.25rem);color:var(--ink-60);max-width:54ch;margin:18px 0 28px}
+  .hero__art{position:absolute;right:4%;top:50%;transform:translateY(-50%);z-index:1;width:min(38%,460px);aspect-ratio:1;border-radius:40px;background:var(--grad-navy);box-shadow:var(--shadow-float);display:grid;place-items:center;font-size:9rem;will-change:transform}
+  @media(max-width:900px){.hero__art{display:none}}
+
+  /* reveal */
+  [data-reveal]{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+  [data-reveal].in{opacity:1;transform:none}
+  [data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  [data-stagger].in>*{opacity:1;transform:none}
+
+  /* value props */
+  .vp{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .vp .c{text-align:center;padding:26px 18px;border-radius:var(--radius);background:var(--surface)}
+  .vp .e{font-size:1.8rem}
+
+  /* product grid */
+  .head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  .card{position:relative;border-radius:var(--radius);background:#fff;border:1px solid var(--line);overflow:hidden;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+  .card:hover{transform:translateY(-7px);box-shadow:var(--shadow-float)}
+  .card .media{position:relative;aspect-ratio:1;display:grid;place-items:center;font-size:3.4rem;overflow:hidden}
+  .card .media .g{position:absolute;inset:0;opacity:.16;transition:transform .6s var(--ease),opacity .4s}
+  .card:hover .media .g{transform:scale(1.12);opacity:.26}
+  .card .media span{position:relative;z-index:1;transition:transform .6s var(--ease)}
+  .card:hover .media span{transform:scale(1.12) rotate(-4deg)}
+  .badge{position:absolute;top:12px;left:12px;z-index:2;background:var(--ink);color:#fff;font-size:.66rem;font-weight:800;padding:5px 10px;border-radius:999px;letter-spacing:.04em}
+  .body{padding:14px 16px 18px}
+  .brand{font-size:.7rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ink-40);font-weight:700}
+  .ptitle{font-size:.98rem;font-weight:600;margin:4px 0 8px;min-height:2.5em}
+  .price{font-weight:800}.price del{color:var(--ink-40);font-weight:500;font-size:.85em;margin-left:6px}
+  .quick{position:absolute;inset-inline:12px;bottom:12px;transform:translateY(130%);opacity:0;transition:transform .35s var(--ease),opacity .35s}
+  .card:hover .quick{transform:none;opacity:1}
+  .quick .btn{width:100%;justify-content:center;padding:12px}
+
+  /* marquee */
+  .marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+  .track{display:flex;gap:64px;width:max-content;animation:mq 28s linear infinite}
+  .marquee:hover .track{animation-play-state:paused}
+  .track span{font-weight:900;font-size:clamp(1.4rem,3vw,2.4rem);color:var(--ink-40);white-space:nowrap}
+  @keyframes mq{to{transform:translateX(-50%)}}
+
+  /* pdp preview */
+  .pdp{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+  .pdp .shot{aspect-ratio:1;border-radius:24px;background:var(--grad-navy);display:grid;place-items:center;font-size:8rem;box-shadow:var(--shadow-float)}
+  .stars{color:#FFB400;font-weight:700}
+  .pdp .price{font-size:2rem}
+  .save{background:#E8FFF1;color:#07823E;font-weight:800;font-size:.8rem;padding:4px 10px;border-radius:999px;margin-left:8px}
+  .trust{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px;font-weight:700;font-size:.85rem;color:var(--ink-60)}
+
+  footer{background:var(--ink);color:#fff;padding:64px 0 28px}
+  .fgrid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px}
+  footer a{color:rgba(255,255,255,.82);display:block;padding:5px 0;font-size:.92rem}
+  .magnetic{transition:transform .2s cubic-bezier(.4,0,.2,1)}
+
+  .demo-flag{position:fixed;bottom:14px;left:14px;z-index:200;background:var(--ink);color:#fff;font-size:.72rem;padding:8px 12px;border-radius:999px;opacity:.85}
+
+  @media(max-width:1024px){.grid,.vp{grid-template-columns:repeat(2,1fr)}.pdp{grid-template-columns:1fr}}
+  @media(max-width:600px){nav.menu{display:none}}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}[data-reveal],[data-stagger]>*{opacity:1!important;transform:none!important}}
+</style>
+</head>
+<body>
+
+<header id="hd" class="glass">
+  <div class="wrap bar">
+    <div class="logo">NALANDA<b> X</b></div>
+    <nav class="menu">
+      <a href="#">Smartwatches</a><a href="#">Audio</a><a href="#">Power</a><a href="#">Smart Home</a><a href="#">Corporate Gifting</a>
+    </nav>
+    <div class="acts"><button class="ic">🔍</button><button class="ic">👤</button><button class="ic">🛍️</button></div>
+  </div>
+</header>
+
+<section class="hero">
+  <span class="orb orb1" data-parallax="0.12"></span>
+  <span class="orb orb2" data-parallax="0.18"></span>
+  <div class="hero__art" data-parallax="-0.05">⌚</div>
+  <div class="wrap">
+    <div class="hero__in" data-reveal>
+      <p class="eyebrow">India's Premium Gadget Destination</p>
+      <h1>Technology, <span class="grad">perfected.</span></h1>
+      <p class="hero__sub">Smartwatches, audio and smart gadgets from the brands you love — curated, certified, and delivered across India.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a class="btn btn--accent magnetic" data-magnetic href="#shop">Shop the collection</a>
+        <a class="btn btn--ghost" href="#brands">Explore brands</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="vp" data-stagger>
+      <div class="c"><div class="e">✅</div><strong>100% Genuine</strong><div class="muted" style="font-size:.86rem">Brand-authorised, warranty-backed</div></div>
+      <div class="c"><div class="e">🚚</div><strong>Fast Delivery</strong><div class="muted" style="font-size:.86rem">Pan-India · COD available</div></div>
+      <div class="c"><div class="e">🔒</div><strong>Secure Payments</strong><div class="muted" style="font-size:.86rem">UPI · Cards · EMI</div></div>
+      <div class="c"><div class="e">↩️</div><strong>Easy Returns</strong><div class="muted" style="font-size:.86rem">Hassle-free 7-day returns</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="shop" style="padding-top:0">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <div><p class="eyebrow">Trending now</p><h2 style="font-size:clamp(1.5rem,2.6vw,2.4rem)">Best sellers</h2></div>
+      <a class="btn btn--ghost" href="#">View all →</a>
+    </div>
+    <div class="grid" data-stagger id="cardgrid"></div>
+  </div>
+</section>
+
+<section class="section" id="brands" style="padding-top:0">
+  <div class="wrap"><p class="eyebrow" style="text-align:center;margin-bottom:24px">Trusted brands we carry</p></div>
+  <div class="marquee"><div class="track" id="mqtrack"></div></div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="pdp">
+      <div class="shot" data-reveal>🎧</div>
+      <div data-reveal>
+        <div class="brand" style="color:var(--accent)">boAt</div>
+        <h2 style="font-size:clamp(1.6rem,3vw,2.4rem)">Airdopes Atom 81 Pro</h2>
+        <div class="stars">★ 4.6 <span class="muted" style="font-weight:500">(2,341)</span></div>
+        <div class="price" style="margin:10px 0">₹1,299 <del>₹4,990</del><span class="save">Save ₹3,691</span></div>
+        <p class="muted">Up to 50H playback, ENx™ tech, low-latency BEAST™ mode, IPX5. Built for all-day life.</p>
+        <div style="display:flex;gap:10px;margin-top:14px"><a class="btn btn--accent magnetic" data-magnetic href="#">Add to Cart</a><a class="btn btn--ghost" href="#">Buy it now</a></div>
+        <div class="trust"><span>✅ 1-Year Warranty</span><span>🚚 Free Shipping</span><span>↩️ 7-Day Returns</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid" data-stagger>
+      <div><div class="logo" style="color:#fff">NALANDA<b> X</b></div><p style="color:rgba(255,255,255,.6);max-width:32ch;font-size:.9rem;margin-top:10px">India's premium destination for smart gadgets and audio.</p></div>
+      <div><h4 style="font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Shop</h4><a>Smartwatches</a><a>Earbuds</a><a>Speakers</a><a>Power Banks</a></div>
+      <div><h4 style="font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Company</h4><a>About</a><a>Corporate Gifting</a><a>Track Order</a><a>Contact</a></div>
+      <div><h4 style="font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Support</h4><a>Warranty</a><a>Returns</a><a>Shipping</a><a>FAQ</a></div>
+    </div>
+    <div style="margin-top:32px;padding-top:20px;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;color:rgba(255,255,255,.55);font-size:.82rem">
+      <span>© 2026 Nalanda Enterprises. All rights reserved.</span><span>Made in India 🇮🇳</span>
+    </div>
+  </div>
+</footer>
+
+<div class="demo-flag">NALANDA X — standalone design preview (sample products)</div>
+
+<script>
+  // ---- sample catalog (representative; your real products auto-load once installed in Shopify) ----
+  var products=[
+    {b:"boAt",t:"Wave Call 2 Smartwatch",e:"⌚",p:"₹1,499",c:"₹3,999",tag:"BESTSELLER"},
+    {b:"Noise",t:"Buds Connect 2 Earbuds",e:"🎧",p:"₹999",c:"₹2,999",tag:"-67%"},
+    {b:"Fire-Boltt",t:"Phoenix Pro AMOLED",e:"⌚",p:"₹1,799",c:"₹8,999",tag:"NEW"},
+    {b:"Portronics",t:"SoundDrum 12W Speaker",e:"🔊",p:"₹1,299",c:"₹2,499",tag:""},
+    {b:"Mivi",t:"DuoPods A350",e:"🎧",p:"₹899",c:"₹2,199",tag:"-59%"},
+    {b:"Swiss Military",t:"Dapper Power Bank 20K",e:"🔋",p:"₹1,599",c:"₹2,999",tag:""},
+    {b:"Logitech",t:"G304 Lightspeed Mouse",e:"🖱️",p:"₹2,295",c:"₹3,495",tag:"PRO"},
+    {b:"boAt",t:"Rockerz 255 Neckband",e:"🎵",p:"₹999",c:"₹3,990",tag:"-75%"}
+  ];
+  var g=document.getElementById('cardgrid');
+  g.innerHTML=products.map(function(x){return (
+    '<article class="card"><div class="media"><div class="g" style="background:var(--grad)"></div>'+
+    (x.tag?'<span class="badge">'+x.tag+'</span>':'')+'<span>'+x.e+'</span></div>'+
+    '<div class="body"><div class="brand">'+x.b+'</div><div class="ptitle">'+x.t+'</div>'+
+    '<div class="price">'+x.p+' <del>'+x.c+'</del></div>'+
+    '<div class="quick"><a class="btn btn--accent" href="#">Add to Cart</a></div></div></article>'
+  );}).join('');
+
+  var brands=["boAt","Noise","Fire-Boltt","Logitech","Swiss Military","Portronics","Mivi","Amazon"];
+  document.getElementById('mqtrack').innerHTML=brands.concat(brands).map(function(b){return '<span>'+b+'</span>';}).join('');
+
+  // ---- animation engine (same techniques as nalanda.js) ----
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if('IntersectionObserver'in window&&!reduce){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+      if(e.target.hasAttribute('data-stagger')){[].forEach.call(e.target.children,function(c,i){c.style.transitionDelay=(i*70)+'ms';});}
+      e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('[data-reveal],[data-stagger]').forEach(function(el){io.observe(el);});
+  }else{document.querySelectorAll('[data-reveal],[data-stagger]').forEach(function(el){el.classList.add('in');});}
+
+  var hd=document.getElementById('hd');
+  addEventListener('scroll',function(){hd.classList.toggle('stuck',scrollY>8);
+    if(!reduce){var y=scrollY;document.querySelectorAll('[data-parallax]').forEach(function(n){n.style.transform=(n.classList.contains('hero__art')?'translateY(-50%) ':'')+'translate3d(0,'+(y*parseFloat(n.getAttribute('data-parallax')))+'px,0)';});}
+  },{passive:true});
+
+  if(!reduce&&!matchMedia('(pointer:coarse)').matches){
+    document.querySelectorAll('[data-magnetic]').forEach(function(el){
+      el.addEventListener('mousemove',function(e){var r=el.getBoundingClientRect();el.style.transform='translate('+(e.clientX-r.left-r.width/2)*.25+'px,'+(e.clientY-r.top-r.height/2)*.4+'px)';});
+      el.addEventListener('mouseleave',function(){el.style.transform='';});
+    });
+  }
+</script>
+</body>
+</html>
