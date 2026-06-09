@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "hero": { "type": "hero" },
+    "value_props": { "type": "value-props" },
+    "best_sellers": {
+      "type": "featured-collection",
+      "settings": { "eyebrow": "Trending now", "title": "Best sellers" }
+    },
+    "brands": { "type": "brand-showcase" },
+    "new_launches": {
+      "type": "featured-collection",
+      "settings": { "eyebrow": "Just dropped", "title": "New launches" }
+    }
+  },
+  "order": ["hero", "value_props", "best_sellers", "brands", "new_launches"]
+}

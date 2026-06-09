@@ -1,0 +1,145 @@
+<section class="section">
+  <div class="wrap">
+    <nav aria-label="Breadcrumb" style="font-size:.82rem;color:var(--ink-40);margin-bottom:18px">
+      <a href="{{ routes.root_url }}">Home</a> / {% if collection %}<a href="{{ collection.url }}">{{ collection.title }}</a> / {% endif %}<span>{{ product.title }}</span>
+    </nav>
+
+    <div class="pdp" data-variants>
+      {%- comment -%} ---------- Gallery ---------- {%- endcomment -%}
+      <div class="pdp__gallery" data-gallery>
+        <div class="gallery__main">
+          {%- if product.featured_image -%}
+            <img data-gallery-main src="{{ product.featured_image | image_url: width: 1200 }}" alt="{{ product.featured_image.alt | default: product.title | escape }}" width="1200" height="1200" fetchpriority="high">
+          {%- else -%}{{ 'product-1' | placeholder_svg_tag }}{%- endif -%}
+        </div>
+        {%- if product.images.size > 1 -%}
+        <div class="gallery__thumbs">
+          {%- for image in product.images -%}
+            <button type="button" data-gallery-thumb data-full="{{ image | image_url: width: 1200 }}" aria-current="{% if forloop.first %}true{% else %}false{% endif %}" aria-label="View image {{ forloop.index }}">
+              <img src="{{ image | image_url: width: 160 }}" alt="" width="64" height="64" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+            </button>
+          {%- endfor -%}
+        </div>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} ---------- Buy panel ---------- {%- endcomment -%}
+      <div data-buy-anchor>
+        {%- if product.vendor != blank -%}<div class="pdp__brand">{{ product.vendor }}</div>{%- endif -%}
+        <h1 class="pdp__title">{{ product.title }}</h1>
+
+        {%- assign rating = product.metafields.reviews.rating.value -%}
+        {%- if rating -%}<div style="color:#FFB400;font-weight:700;margin:4px 0">★ {{ rating }} <span class="muted" style="font-weight:500">({{ product.metafields.reviews.rating_count }})</span></div>{%- endif -%}
+
+        <div class="pdp__price">
+          <span data-current-price>{{ product.selected_or_first_available_variant.price | money }}</span>
+          {%- if product.compare_at_price > product.price -%}
+            <del>{{ product.compare_at_price | money }}</del>
+            <span class="pdp__save">{{ 'products.product.save' | t }} {{ product.compare_at_price | minus: product.price | money }}</span>
+          {%- endif -%}
+        </div>
+
+        {%- comment -%} variant buttons (first option) {%- endcomment -%}
+        {%- if product.variants.size > 1 -%}
+        <div class="variant">
+          {%- for v in product.variants -%}
+            <button type="button" data-variant="{{ v.id }}" data-price="{{ v.price | money }}" aria-pressed="{% if v == product.selected_or_first_available_variant %}true{% else %}false{% endif %}" {% unless v.available %}disabled style="opacity:.45"{% endunless %}>{{ v.title }}</button>
+          {%- endfor -%}
+        </div>
+        {%- endif -%}
+
+        <form method="post" action="{{ routes.cart_add_url }}" class="pdp__buy">
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-variant-id>
+          <button type="submit" class="btn btn--accent btn--block magnetic" data-magnetic {% unless product.available %}disabled{% endunless %}>
+            {% if product.available %}{{ 'products.product.add_to_cart' | t }}{% else %}{{ 'products.product.sold_out' | t }}{% endif %}
+          </button>
+        </form>
+        {%- if product.available -%}<a href="{{ routes.cart_url }}/checkout" class="btn btn--ghost btn--block" style="margin-top:10px" data-no-ajax>{{ 'products.product.buy_it_now' | t }}</a>{%- endif -%}
+
+        <div class="pdp__trust">
+          {%- for block in section.blocks -%}{%- if block.type == 'trust' -%}<span {{ block.shopify_attributes }}>{{ block.settings.text }}</span>{%- endif -%}{%- endfor -%}
+        </div>
+
+        {%- comment -%} ---------- Highlights ---------- {%- endcomment -%}
+        {%- assign hl = section.blocks | where: 'type', 'highlight' -%}
+        {%- if hl.size > 0 -%}
+        <div class="pdp__block">
+          <h2 class="h2" style="font-size:1.2rem">{{ 'products.product.highlights' | t }}</h2>
+          <div class="grid grid--2" style="gap:12px">
+            {%- for block in hl -%}
+              <div {{ block.shopify_attributes }} style="display:flex;gap:10px;align-items:flex-start">
+                <span style="font-size:1.2rem">{{ block.settings.icon }}</span>
+                <div><strong style="font-size:.92rem">{{ block.settings.title }}</strong><div class="muted" style="font-size:.84rem">{{ block.settings.text }}</div></div>
+              </div>
+            {%- endfor -%}
+          </div>
+        </div>
+        {%- endif -%}
+
+        {%- comment -%} ---------- Description ---------- {%- endcomment -%}
+        {%- if product.description != blank -%}
+        <div class="pdp__block rte">{{ product.description }}</div>
+        {%- endif -%}
+
+        {%- comment -%} ---------- Specs ---------- {%- endcomment -%}
+        {%- assign specs = section.blocks | where: 'type', 'spec' -%}
+        {%- if specs.size > 0 -%}
+        <div class="pdp__block">
+          <h2 class="h2" style="font-size:1.2rem">{{ 'products.product.specs' | t }}</h2>
+          <table class="spec-table">
+            {%- for block in specs -%}<tr {{ block.shopify_attributes }}><th>{{ block.settings.label }}</th><td>{{ block.settings.value }}</td></tr>{%- endfor -%}
+          </table>
+        </div>
+        {%- endif -%}
+
+        {%- comment -%} ---------- FAQ ---------- {%- endcomment -%}
+        {%- assign faqs = section.blocks | where: 'type', 'faq' -%}
+        {%- if faqs.size > 0 -%}
+        <div class="pdp__block">
+          <h2 class="h2" style="font-size:1.2rem">{{ 'products.product.faq' | t }}</h2>
+          {%- for block in faqs -%}
+            <details class="acc" {{ block.shopify_attributes }}><summary>{{ block.settings.q }}</summary><div class="acc__body">{{ block.settings.a }}</div></details>
+          {%- endfor -%}
+        </div>
+        {%- endif -%}
+
+        {%- comment -%} ---------- Reviews (Judge.me) ---------- {%- endcomment -%}
+        <div class="pdp__block">
+          <h2 class="h2" style="font-size:1.2rem">{{ 'products.product.reviews' | t }}</h2>
+          <div class="jdgm-widget jdgm-review-widget" data-id="{{ product.id }}">{{ product.metafields.judgeme.widget }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{%- comment -%} ---------- Sticky mobile buy bar ---------- {%- endcomment -%}
+<div class="sticky-buy glass" data-sticky-buy>
+  <div class="sticky-buy__inner">
+    {%- if product.featured_image -%}<img src="{{ product.featured_image | image_url: width: 96 }}" alt="" width="44" height="44" style="border-radius:10px;object-fit:cover">{%- endif -%}
+    <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ product.title }}</div><div style="font-weight:800">{{ product.selected_or_first_available_variant.price | money }}</div></div>
+    <form method="post" action="{{ routes.cart_add_url }}">
+      <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+      <button class="btn btn--accent" type="submit" {% unless product.available %}disabled{% endunless %}>{{ 'products.product.add_to_cart' | t }}</button>
+    </form>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Product",
+  "blocks": [
+    { "type": "trust", "name": "Trust badge", "settings": [ { "type": "text", "id": "text", "label": "Text", "default": "✅ 1-Year Warranty" } ] },
+    { "type": "highlight", "name": "Highlight", "settings": [
+      { "type": "text", "id": "icon", "label": "Icon", "default": "🔋" },
+      { "type": "text", "id": "title", "label": "Title", "default": "Long battery" },
+      { "type": "text", "id": "text", "label": "Text", "default": "All-day power" } ] },
+    { "type": "spec", "name": "Spec row", "settings": [
+      { "type": "text", "id": "label", "label": "Label", "default": "Battery" },
+      { "type": "text", "id": "value", "label": "Value", "default": "40 hours" } ] },
+    { "type": "faq", "name": "FAQ", "settings": [
+      { "type": "text", "id": "q", "label": "Question", "default": "Is there a warranty?" },
+      { "type": "textarea", "id": "a", "label": "Answer", "default": "Yes, 1-year manufacturer warranty." } ] }
+  ]
+}
+{% endschema %}

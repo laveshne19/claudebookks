@@ -1,0 +1,11 @@
+<!doctype html><html lang="{{ request.locale.iso_code }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ shop.name }} Gift Card</title>{{ 'nalanda.css' | asset_url | stylesheet_tag }}</head>
+<body><section class="section"><div class="wrap" style="max-width:520px;text-align:center">
+  <p class="eyebrow">{{ shop.name }}</p>
+  <h1 class="h2">Gift Card</h1>
+  <div class="glass" style="padding:28px;border-radius:var(--radius);margin:20px 0">
+    <div class="display" style="font-size:2.4rem">{{ gift_card.balance | money }}</div>
+    <img src="{{ gift_card.qr_identifier | generate_qr_code }}" alt="Gift card QR" style="margin:16px auto" width="160" height="160">
+    <p class="muted">Code: <strong>{{ gift_card.code | format_code }}</strong></p>
+  </div>
+  <a class="btn btn--accent" href="{{ shop.url }}">Shop now</a>
+</div></section></body></html>

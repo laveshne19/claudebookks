@@ -1,0 +1,56 @@
+<footer class="section" style="background:var(--ink);color:#fff;margin-top:var(--space-section)" role="contentinfo">
+  <div class="wrap">
+    <div style="display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px" data-reveal-stagger>
+      <div>
+        <div class="header__logo" style="margin-bottom:12px">{{ shop.name }}</div>
+        <p style="color:rgba(255,255,255,.6);max-width:32ch;font-size:.9rem">{{ section.settings.tagline }}</p>
+      </div>
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'menu' -%}
+        <div {{ block.shopify_attributes }}>
+          <h4 style="font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">{{ block.settings.heading }}</h4>
+          {%- for link in block.settings.menu.links -%}
+            <a href="{{ link.url }}" style="display:block;padding:6px 0;color:rgba(255,255,255,.85);font-size:.9rem">{{ link.title }}</a>
+          {%- endfor -%}
+        </div>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+
+    {%- if section.settings.show_newsletter -%}
+    <div class="glass" style="margin-top:40px;padding:24px;border-radius:var(--radius);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)" data-reveal>
+      <strong style="font-size:1.1rem">Join the inner circle</strong>
+      <p style="color:rgba(255,255,255,.6);font-size:.9rem;margin:4px 0 12px">New launches, deals and tech insights — no spam.</p>
+      {% form 'customer' %}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="email" name="contact[email]" required placeholder="you@email.com" style="flex:1;min-width:220px;padding:14px;border-radius:12px;border:0" aria-label="Email">
+          <button class="btn btn--accent" type="submit">Subscribe</button>
+        </div>
+      {% endform %}
+    </div>
+    {%- endif -%}
+
+    <div style="margin-top:32px;padding-top:20px;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:rgba(255,255,255,.55);font-size:.82rem">
+      <span>© {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.</span>
+      <span>Made in India 🇮🇳</span>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text", "id": "tagline", "label": "Tagline", "default": "India's premium destination for smart gadgets and audio." },
+    { "type": "checkbox", "id": "show_newsletter", "label": "Show newsletter", "default": true }
+  ],
+  "blocks": [
+    { "type": "menu", "name": "Menu column", "settings": [
+      { "type": "text", "id": "heading", "label": "Heading", "default": "Shop" },
+      { "type": "link_list", "id": "menu", "label": "Menu" }
+    ]}
+  ],
+  "presets": [{ "name": "Footer", "blocks": [ { "type": "menu" }, { "type": "menu" }, { "type": "menu" } ] }]
+}
+{% endschema %}

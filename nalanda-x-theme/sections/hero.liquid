@@ -1,0 +1,38 @@
+<section class="hero" aria-label="{{ section.settings.title | escape }}">
+  <div class="hero__bg" aria-hidden="true">
+    <span class="hero__orb hero__orb--1" data-parallax="0.12"></span>
+    <span class="hero__orb hero__orb--2" data-parallax="0.18"></span>
+  </div>
+  <div class="wrap">
+    <div class="hero__inner" data-reveal>
+      {%- if section.settings.eyebrow != blank -%}<p class="eyebrow">{{ section.settings.eyebrow }}</p>{%- endif -%}
+      <h1 class="hero__title">{{ section.settings.title }} <span class="grad">{{ section.settings.title_accent }}</span></h1>
+      {%- if section.settings.subtitle != blank -%}<p class="hero__sub">{{ section.settings.subtitle }}</p>{%- endif -%}
+      <div class="hero__cta">
+        {%- if section.settings.cta_text != blank -%}<a class="btn btn--accent magnetic" data-magnetic href="{{ section.settings.cta_url }}">{{ section.settings.cta_text }}</a>{%- endif -%}
+        {%- if section.settings.cta2_text != blank -%}<a class="btn btn--ghost" href="{{ section.settings.cta2_url }}">{{ section.settings.cta2_text }}</a>{%- endif -%}
+      </div>
+    </div>
+  </div>
+  {%- if section.settings.image -%}
+    <img class="hero__media" data-parallax="-0.06" src="{{ section.settings.image | image_url: width: 1200 }}" alt="" width="1200" height="1200" fetchpriority="high">
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Hero",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "India's Premium Gadget Destination" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Technology, perfected." },
+    { "type": "text", "id": "title_accent", "label": "Accent word", "default": "Effortlessly." },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Smartwatches, audio and smart gadgets from the brands you love — curated, certified, delivered." },
+    { "type": "text", "id": "cta_text", "label": "Primary CTA text", "default": "Shop the collection" },
+    { "type": "url", "id": "cta_url", "label": "Primary CTA link" },
+    { "type": "text", "id": "cta2_text", "label": "Secondary CTA text", "default": "Explore brands" },
+    { "type": "url", "id": "cta2_url", "label": "Secondary CTA link" },
+    { "type": "image_picker", "id": "image", "label": "Hero product image (PNG, transparent)" }
+  ],
+  "presets": [{ "name": "Hero" }]
+}
+{% endschema %}

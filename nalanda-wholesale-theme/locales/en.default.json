@@ -1,0 +1,23 @@
+{
+  "general": {
+    "search": { "search": "Search", "placeholder": "Search gadgets, brands…", "results": "Results" },
+    "cart": { "title": "Your Cart", "empty": "Your cart is empty", "checkout": "Checkout", "subtotal": "Subtotal", "add": "Add to Cart", "view": "View cart" },
+    "accessibility": { "skip_to_content": "Skip to content", "close": "Close", "menu": "Menu" }
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "Add to Cart",
+      "buy_it_now": "Buy it now",
+      "sold_out": "Sold out",
+      "from": "From",
+      "save": "Save",
+      "specs": "Specifications",
+      "highlights": "Highlights",
+      "reviews": "Ratings & Reviews",
+      "faq": "FAQ",
+      "warranty": "Warranty & Support",
+      "delivery": "Delivery"
+    }
+  },
+  "collections": { "general": { "filter": "Filter", "sort": "Sort", "products": "products" } }
+}

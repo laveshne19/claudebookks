@@ -1,0 +1,50 @@
+{%- comment -%}
+  Dynamic SEO meta tags: title, description, robots, OG, Twitter, pagination rel.
+{%- endcomment -%}
+
+{%- liquid
+  assign seo_title = page_title
+  if request.page_type == 'product' and product.metafields.seo.title != blank
+    assign seo_title = product.metafields.seo.title
+  endif
+
+  assign seo_desc = page_description
+  if seo_desc == blank
+    if request.page_type == 'product'
+      assign seo_desc = product.description | strip_html | truncatewords: 30
+    elsif request.page_type == 'collection'
+      assign seo_desc = collection.description | strip_html | truncatewords: 30
+    else
+      assign seo_desc = shop.description
+    endif
+  endif
+
+  assign og_image = page_image | default: settings.share_image
+  if request.page_type == 'product' and product.featured_image
+    assign og_image = product.featured_image
+  endif
+-%}
+
+<title>{{ seo_title }}{% unless seo_title contains shop.name %} · {{ shop.name }}{% endunless %}</title>
+<meta name="description" content="{{ seo_desc | escape }}">
+
+{%- if template.name == 'search' or template contains 'cart' or customer -%}
+  <meta name="robots" content="noindex, nofollow">
+{%- else -%}
+  <meta name="robots" content="index, follow, max-image-preview:large">
+{%- endif -%}
+
+{%- if paginate.previous -%}<link rel="prev" href="{{ paginate.previous.url }}">{%- endif -%}
+{%- if paginate.next -%}<link rel="next" href="{{ paginate.next.url }}">{%- endif -%}
+
+<meta property="og:site_name" content="{{ shop.name }}">
+<meta property="og:type" content="{% if request.page_type == 'product' %}product{% else %}website{% endif %}">
+<meta property="og:title" content="{{ seo_title | escape }}">
+<meta property="og:description" content="{{ seo_desc | escape }}">
+<meta property="og:url" content="{{ canonical_url }}">
+{%- if og_image -%}<meta property="og:image" content="https:{{ og_image | image_url: width: 1200 }}">{%- endif -%}
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ seo_title | escape }}">
+<meta name="twitter:description" content="{{ seo_desc | escape }}">
+{%- if og_image -%}<meta name="twitter:image" content="https:{{ og_image | image_url: width: 1200 }}">{%- endif -%}

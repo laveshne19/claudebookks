@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "blocks": {
+        "t1": { "type": "trust", "settings": { "text": "✅ 1-Year Warranty" } },
+        "t2": { "type": "trust", "settings": { "text": "🚚 Free Shipping" } },
+        "t3": { "type": "trust", "settings": { "text": "↩️ 7-Day Returns" } },
+        "h1": { "type": "highlight", "settings": { "icon": "🔋", "title": "Long battery", "text": "All-day power on a single charge." } },
+        "h2": { "type": "highlight", "settings": { "icon": "🎧", "title": "Premium audio", "text": "Deep bass, crisp highs." } },
+        "s1": { "type": "spec", "settings": { "label": "Warranty", "value": "1 Year" } },
+        "s2": { "type": "spec", "settings": { "label": "In the box", "value": "Device, cable, manual" } },
+        "f1": { "type": "faq", "settings": { "q": "Is it genuine with warranty?", "a": "Yes — brand-authorised with full manufacturer warranty." } },
+        "f2": { "type": "faq", "settings": { "q": "Do you offer Cash on Delivery?", "a": "Yes, COD is available across India." } }
+      },
+      "block_order": ["t1", "t2", "t3", "h1", "h2", "s1", "s2", "f1", "f2"]
+    }
+  },
+  "order": ["main"]
+}

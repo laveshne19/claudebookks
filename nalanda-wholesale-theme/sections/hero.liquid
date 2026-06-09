@@ -1,0 +1,38 @@
+<section class="hero" aria-label="{{ section.settings.title | escape }}">
+  <div class="hero__bg" aria-hidden="true">
+    <span class="hero__orb hero__orb--1" data-parallax="0.10"></span>
+    <span class="hero__orb hero__orb--2" data-parallax="0.16"></span>
+  </div>
+  <div class="wrap">
+    <div class="hero__inner" data-reveal>
+      {%- if section.settings.eyebrow != blank -%}<p class="eyebrow">{{ section.settings.eyebrow }}</p>{%- endif -%}
+      <h1 class="hero__title">{{ section.settings.title }} <span class="grad">{{ section.settings.title_accent }}</span></h1>
+      {%- if section.settings.subtitle != blank -%}<p class="hero__sub">{{ section.settings.subtitle }}</p>{%- endif -%}
+      <div class="hero__cta">
+        {%- if section.settings.cta_text != blank -%}<a class="btn btn--accent magnetic" data-magnetic href="{{ section.settings.cta_url }}">{{ section.settings.cta_text }}</a>{%- endif -%}
+        {%- if section.settings.whatsapp_cta != blank and settings.whatsapp != blank -%}
+          <a class="btn btn--ghost" href="https://wa.me/{{ settings.whatsapp }}?text=Hi%2C%20I%27d%20like%20a%20bulk%20quote" target="_blank" rel="noopener">{{ section.settings.whatsapp_cta }}</a>
+        {%- endif -%}
+      </div>
+      <div class="hero__trust">
+        <span>🧾 GST invoicing</span><span>📦 Low MOQ</span><span>🚚 Pan-India dispatch</span><span>✅ Authorised stock</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "B2B · Wholesale · Distribution" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Wholesale gadgets," },
+    { "type": "text", "id": "title_accent", "label": "Accent", "default": "trade pricing." },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Stock your store with boAt, Noise, Fire-Boltt, Portronics & more — at dealer prices, with GST invoicing and fast bulk dispatch across India." },
+    { "type": "text", "id": "cta_text", "label": "Primary CTA", "default": "Browse wholesale catalogue" },
+    { "type": "url", "id": "cta_url", "label": "Primary CTA link" },
+    { "type": "text", "id": "whatsapp_cta", "label": "WhatsApp CTA", "default": "Get a bulk quote" }
+  ],
+  "presets": [{ "name": "Hero" }]
+}
+{% endschema %}

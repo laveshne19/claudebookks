@@ -1,0 +1,10 @@
+<section class="section"><div class="wrap" style="max-width:440px">
+  <h1 class="h2">Login</h1>
+  {% form 'customer_login' %}
+    {{ form.errors | default_errors }}
+    <label for="ce">Email</label><input id="ce" type="email" name="customer[email]" required style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:6px 0 14px">
+    <label for="cp">Password</label><input id="cp" type="password" name="customer[password]" required style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:6px 0 14px">
+    <button class="btn btn--accent btn--block" type="submit">Login</button>
+  {% endform %}
+  <p style="margin-top:14px"><a href="{{ routes.account_register_url }}">Create account</a> · <a href="{{ routes.account_recover_url }}">Forgot password?</a></p>
+</div></section>

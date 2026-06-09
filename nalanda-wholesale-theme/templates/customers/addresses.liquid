@@ -1,0 +1,15 @@
+<section class="section"><div class="wrap" style="max-width:640px">
+  <h1 class="h2">Your addresses</h1>
+  <a class="muted" href="{{ routes.account_url }}">← Back to account</a>
+  {%- for address in customer.addresses -%}
+    <div class="glass" style="padding:16px;border-radius:var(--radius);margin:12px 0">{{ address | format_address }}</div>
+  {%- else -%}<p class="muted" style="margin-top:12px">No saved addresses.</p>{%- endfor -%}
+  {% form 'customer_address', customer.new_address %}
+    {{ form.errors | default_errors }}
+    <h2 style="font-size:1.1rem;margin-top:18px">Add a new address</h2>
+    <input name="address[address1]" placeholder="Address" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:6px 0">
+    <input name="address[city]" placeholder="City" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:6px 0">
+    <input name="address[zip]" placeholder="PIN code" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;margin:6px 0 14px">
+    <button class="btn btn--accent" type="submit">Save address</button>
+  {% endform %}
+</div></section>

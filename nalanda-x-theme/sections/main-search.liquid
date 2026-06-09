@@ -1,0 +1,15 @@
+<section class="section"><div class="wrap">
+  <form action="{{ routes.search_url }}" method="get" data-reveal style="max-width:640px;margin-inline:auto;display:flex;gap:8px">
+    <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'general.search.placeholder' | t }}" style="flex:1;padding:14px;border:1px solid var(--line);border-radius:12px" aria-label="Search">
+    <button class="btn btn--accent" type="submit">{{ 'general.search.search' | t }}</button>
+  </form>
+  {%- if search.performed -%}
+    <p class="muted" style="margin:18px 0">{{ search.results_count }} {{ 'general.search.results' | t }} “{{ search.terms }}”</p>
+    <div class="grid grid--4" data-reveal-stagger>
+      {%- for item in search.results -%}
+        {%- if item.object_type == 'product' -%}{% render 'product-card', product: item %}{%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</div></section>
+{% schema %}{ "name": "Search", "settings": [] }{% endschema %}

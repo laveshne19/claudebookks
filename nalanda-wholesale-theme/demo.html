@@ -1,0 +1,110 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nalanda Wholesale — Live B2B Preview</title>
+<style>
+  :root{--maxw:1360px;--ink:#0B1220;--ink-60:rgba(11,18,32,.62);--ink-40:rgba(11,18,32,.4);--bg:#fff;--surface:#F4F7FB;--line:rgba(11,18,32,.10);--accent:#1D4ED8;--accent-2:#059669;--grad:linear-gradient(120deg,#1D4ED8,#0EA5E9);--navy:linear-gradient(160deg,#0B1220,#1D4ED8);--shadow:0 24px 60px -18px rgba(11,18,32,.30);--ease:cubic-bezier(.22,1,.36,1)}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Roboto,sans-serif;line-height:1.6}
+  a{color:inherit;text-decoration:none}h1,h2{letter-spacing:-.025em;margin:0 0 .35em;font-weight:800;line-height:1.05}
+  .wrap{max-width:var(--maxw);margin:auto;padding:0 clamp(16px,4vw,40px)}.section{padding:clamp(40px,6vw,90px) 0}
+  .eyebrow{text-transform:uppercase;letter-spacing:.2em;font-size:.72rem;font-weight:800;color:var(--accent)}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}.muted{color:var(--ink-60)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:12px;font-weight:700;font-size:.95rem;border:1px solid transparent;cursor:pointer;background:var(--ink);color:#fff;transition:transform .25s var(--ease),box-shadow .25s,filter .2s}
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.08)}.btn--accent{background:var(--grad)}.btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .glass{background:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.6);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px)}
+  header{position:sticky;top:0;z-index:90}.bar{display:flex;align-items:center;gap:24px;padding:14px 0}.logo{font-weight:900;font-size:1.3rem;letter-spacing:-.04em}.logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  nav.m{display:flex;gap:4px;margin:auto}nav.m a{padding:9px 13px;border-radius:10px;font-weight:600;font-size:.93rem}nav.m a:hover{background:var(--surface)}
+  .hero{position:relative;overflow:clip;min-height:clamp(480px,72vh,720px);display:grid;align-items:center}
+  .orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.45;will-change:transform}.o1{width:42vw;height:42vw;left:-8%;top:-14%;background:radial-gradient(circle,var(--accent),transparent 70%)}.o2{width:38vw;height:38vw;right:-8%;bottom:-16%;background:radial-gradient(circle,#0EA5E9,transparent 70%)}
+  .hero h1{font-size:clamp(2.4rem,5.4vw,4.4rem)}.hsub{font-size:clamp(1rem,1.3vw,1.2rem);color:var(--ink-60);max-width:56ch;margin:16px 0 24px}
+  .htrust{display:flex;gap:16px;flex-wrap:wrap;margin-top:22px;font-weight:700;font-size:.85rem;color:var(--ink-60)}
+  [data-reveal]{opacity:0;transform:translateY(26px);transition:opacity .8s var(--ease),transform .8s var(--ease)}[data-reveal].in{opacity:1;transform:none}
+  [data-st]>*{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}[data-st].in>*{opacity:1;transform:none}
+  .vp{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.vp .c{text-align:center;padding:24px 16px;border-radius:14px;background:var(--surface)}.vp .e{font-size:1.7rem}
+  .head{display:flex;align-items:end;justify-content:space-between;margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+  .card{position:relative;border-radius:14px;background:#fff;border:1px solid var(--line);overflow:hidden;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+  .card:hover{transform:translateY(-6px);box-shadow:var(--shadow)}.media{position:relative;aspect-ratio:1;display:grid;place-items:center;font-size:3.2rem;overflow:hidden}
+  .media .g{position:absolute;inset:0;background:var(--grad);opacity:.14;transition:transform .6s var(--ease)}.card:hover .media .g{transform:scale(1.12)}.media span{position:relative;transition:transform .6s var(--ease)}.card:hover .media span{transform:scale(1.1) rotate(-4deg)}
+  .moq{position:absolute;top:10px;right:10px;z-index:2;background:var(--accent);color:#fff;font-size:.64rem;font-weight:800;padding:4px 9px;border-radius:999px}
+  .body{padding:13px 15px 16px}.brand{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-40);font-weight:700}.pt{font-size:.95rem;font-weight:600;margin:3px 0 7px;min-height:2.4em}
+  .price{font-weight:800}.price .u{font-size:.7em;color:var(--ink-40);font-weight:600}.price del{color:var(--ink-40);font-weight:500;font-size:.82em;margin-left:6px}
+  .tier{font-size:.74rem;color:var(--accent-2);font-weight:700;margin-top:3px}
+  .marq{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}.trk{display:flex;gap:60px;width:max-content;animation:mq 26s linear infinite}.marq:hover .trk{animation-play-state:paused}.trk span{font-weight:900;font-size:clamp(1.3rem,2.6vw,2.2rem);color:var(--ink-40);white-space:nowrap}@keyframes mq{to{transform:translateX(-50%)}}
+  .pdp{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}.shot{aspect-ratio:1;border-radius:20px;background:var(--navy);display:grid;place-items:center;font-size:7rem;box-shadow:var(--shadow)}
+  .tiertbl{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0}.tiertbl th,.tiertbl td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:.9rem}.tiertbl th{background:var(--surface);font-weight:700}.tiertbl tr:last-child td{border-bottom:0}
+  .qty{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}.qty button{width:42px;height:48px;border:0;background:var(--surface);font-size:1.3rem;cursor:pointer}.qty input{width:60px;height:48px;border:0;text-align:center;font-weight:700}
+  .trade{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:32px;border-radius:16px;background:var(--navy);color:#fff}.trade .eyebrow{color:#fff;opacity:.8}.trade .muted{color:rgba(255,255,255,.72)}
+  footer{background:var(--ink);color:#fff;padding:56px 0 24px}.fg{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:28px}footer a{color:rgba(255,255,255,.82);display:block;padding:4px 0;font-size:.9rem}
+  .flag{position:fixed;bottom:14px;left:14px;z-index:200;background:var(--ink);color:#fff;font-size:.72rem;padding:8px 12px;border-radius:999px;opacity:.85}
+  .magnetic{transition:transform .2s cubic-bezier(.4,0,.2,1)}
+  @media(max-width:1024px){.grid,.vp{grid-template-columns:repeat(2,1fr)}.pdp{grid-template-columns:1fr}}@media(max-width:600px){nav.m{display:none}}
+  @media(prefers-reduced-motion:reduce){*{transition-duration:.001ms!important;animation-duration:.001ms!important}[data-reveal],[data-st]>*{opacity:1!important;transform:none!important}}
+</style></head><body>
+
+<header class="glass"><div class="wrap bar"><div class="logo">NALANDA<b> Wholesale</b></div>
+<nav class="m"><a>Smartwatches</a><a>Audio</a><a>Power</a><a>Accessories</a><a>Become a Dealer</a></nav>
+<div style="display:flex;gap:8px"><a class="btn btn--ghost" style="padding:10px 16px">💬 Bulk quote</a><a class="btn btn--accent" style="padding:10px 16px">🛍️ Order</a></div></div></header>
+
+<section class="hero"><span class="orb o1" data-px="0.1"></span><span class="orb o2" data-px="0.16"></span>
+<div class="wrap"><div data-reveal style="max-width:760px">
+<p class="eyebrow">B2B · Wholesale · Distribution</p>
+<h1>Wholesale gadgets, <span class="grad">trade pricing.</span></h1>
+<p class="hsub">Stock your store with boAt, Noise, Fire-Boltt, Portronics & more — at dealer prices, with GST invoicing and fast bulk dispatch across India.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn--accent magnetic" data-mag>Browse wholesale catalogue</a><a class="btn btn--ghost">Get a bulk quote</a></div>
+<div class="htrust"><span>🧾 GST invoicing</span><span>📦 Low MOQ</span><span>🚚 Pan-India dispatch</span><span>✅ Authorised stock</span></div>
+</div></div></section>
+
+<section class="section"><div class="wrap"><div class="vp" data-st>
+<div class="c"><div class="e">🧾</div><strong>GST Invoicing</strong><div class="muted" style="font-size:.85rem">Proper invoice every order</div></div>
+<div class="c"><div class="e">📦</div><strong>Low MOQ</strong><div class="muted" style="font-size:.85rem">Start small, scale up</div></div>
+<div class="c"><div class="e">🚚</div><strong>Bulk Dispatch</strong><div class="muted" style="font-size:.85rem">Fast pan-India shipping</div></div>
+<div class="c"><div class="e">✅</div><strong>Authorised Stock</strong><div class="muted" style="font-size:.85rem">100% genuine, warranty</div></div>
+</div></div></section>
+
+<section class="section" style="padding-top:0"><div class="wrap">
+<div class="head" data-reveal><div><p class="eyebrow">Wholesale catalogue</p><h2 style="font-size:clamp(1.5rem,2.6vw,2.3rem)">Top moving stock</h2></div><a class="btn btn--ghost">View all →</a></div>
+<div class="grid" data-st id="grid"></div></div></section>
+
+<section class="section" style="padding-top:0"><div class="wrap"><p class="eyebrow" style="text-align:center;margin-bottom:22px">Authorised brands we distribute</p></div>
+<div class="marq"><div class="trk" id="trk"></div></div></section>
+
+<section class="section"><div class="wrap"><div class="pdp">
+<div class="shot" data-reveal>🎧</div>
+<div data-reveal><div class="brand" style="color:var(--accent)">boAt</div><h2 style="font-size:clamp(1.5rem,3vw,2.2rem)">Airdopes Atom 81 Pro</h2>
+<div class="price" style="font-size:1.8rem;margin:6px 0">₹699 <span class="u">/unit</span> <del>₹4,499</del></div>
+<div class="muted" style="font-size:.9rem">Minimum order: <strong>10 units</strong> · GST extra as applicable</div>
+<table class="tiertbl"><tr><th>Quantity</th><th>Price / unit</th></tr><tr><td>10+ units</td><td><strong>₹699</strong></td></tr><tr><td>50+ units</td><td><strong>₹669</strong></td></tr><tr><td>100+ units</td><td><strong>₹639</strong></td></tr></table>
+<div style="display:flex;gap:10px;align-items:center"><div class="qty"><button>−</button><input value="10"><button>+</button></div><a class="btn btn--accent magnetic" data-mag style="flex:1;justify-content:center">Add to bulk order</a></div>
+<a class="btn btn--ghost" style="width:100%;justify-content:center;margin-top:10px">💬 Request a bulk quote on WhatsApp</a>
+<div class="htrust"><span>🧾 GST Invoice</span><span>🛡️ Brand warranty</span><span>🚚 Bulk dispatch</span></div>
+</div></div></div></section>
+
+<section class="section"><div class="wrap"><div class="trade" data-reveal>
+<div><p class="eyebrow">Become a dealer</p><h2 style="margin:0">Open a wholesale account</h2><p class="muted" style="margin:8px 0 0;max-width:52ch">Standing trade prices, priority stock, GST invoicing and dedicated support for your retail or distribution business.</p></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn--accent">Apply for dealer pricing</a><a class="btn btn--ghost">💬 WhatsApp us</a></div>
+</div></div></section>
+
+<footer><div class="wrap"><div class="fg" data-st>
+<div><div class="logo" style="color:#fff">NALANDA<b> Wholesale</b></div><p style="color:rgba(255,255,255,.6);max-width:32ch;font-size:.9rem;margin-top:8px">B2B distribution of gadgets & audio across India.</p><p style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:8px">GSTIN: 03XXXXXXXXXXXXX</p></div>
+<div><h4 style="font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Catalogue</h4><a>Smartwatches</a><a>Earbuds</a><a>Speakers</a><a>Power Banks</a></div>
+<div><h4 style="font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Trade</h4><a>Become a Dealer</a><a>Bulk Pricing</a><a>GST & Invoicing</a><a>Dispatch</a></div>
+<div><h4 style="font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5)">Support</h4><a>WhatsApp</a><a>Returns</a><a>Track Order</a><a>Contact</a></div>
+</div><div style="margin-top:28px;padding-top:18px;border-top:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.55);font-size:.82rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px"><span>© 2026 Nalanda Enterprises (Wholesale).</span><span>Made in India 🇮🇳</span></div></div></footer>
+
+<div class="flag">Nalanda Wholesale — standalone B2B preview (sample data)</div>
+<script>
+  var P=[{b:"boAt",t:"Airdopes Atom 81 Pro",e:"🎧",p:"₹699",c:"₹4,499",m:10,tier:"₹639"},
+  {b:"Noise",t:"Colorfit Pulse 4 Watch",e:"⌚",p:"₹899",c:"₹3,999",m:10,tier:"₹829"},
+  {b:"Fire-Boltt",t:"Ninja Call Pro Plus",e:"⌚",p:"₹1,049",c:"₹6,999",m:6,tier:"₹979"},
+  {b:"Portronics",t:"SoundDrum 1 Speaker",e:"🔊",p:"₹749",c:"₹2,499",m:12,tier:"₹699"},
+  {b:"Mivi",t:"DuoPods A350 TWS",e:"🎧",p:"₹599",c:"₹2,199",m:20,tier:"₹549"},
+  {b:"Swiss Military",t:"Power Bank 20000mAh",e:"🔋",p:"₹999",c:"₹2,999",m:10,tier:"₹929"},
+  {b:"boAt",t:"Rockerz 255 Neckband",e:"🎵",p:"₹549",c:"₹3,990",m:24,tier:"₹499"},
+  {b:"Logitech",t:"G304 Wireless Mouse",e:"🖱️",p:"₹1,795",c:"₹3,495",m:6,tier:"₹1,699"}];
+  document.getElementById('grid').innerHTML=P.map(function(x){return '<article class="card"><div class="media"><div class="g"></div><span class="moq">MOQ '+x.m+'</span><span>'+x.e+'</span></div><div class="body"><div class="brand">'+x.b+'</div><div class="pt">'+x.t+'</div><div class="price">'+x.p+'<span class="u">/unit</span> <del>'+x.c+'</del></div><div class="tier">Bulk from '+x.tier+'/unit</div></div></article>';}).join('');
+  var B=["boAt","Noise","Fire-Boltt","Logitech","Swiss Military","Portronics","Mivi","Amazon"];document.getElementById('trk').innerHTML=B.concat(B).map(function(b){return '<span>'+b+'</span>';}).join('');
+  var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if('IntersectionObserver'in window&&!rm){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){if(e.target.hasAttribute('data-st')){[].forEach.call(e.target.children,function(c,i){c.style.transitionDelay=(i*70)+'ms';});}e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12,rootMargin:'0px 0px -8% 0px'});document.querySelectorAll('[data-reveal],[data-st]').forEach(function(el){io.observe(el);});}else{document.querySelectorAll('[data-reveal],[data-st]').forEach(function(el){el.classList.add('in');});}
+  addEventListener('scroll',function(){if(!rm){var y=scrollY;document.querySelectorAll('[data-px]').forEach(function(n){n.style.transform='translate3d(0,'+(y*parseFloat(n.getAttribute('data-px')))+'px,0)';});}},{passive:true});
+  if(!rm&&!matchMedia('(pointer:coarse)').matches){document.querySelectorAll('[data-mag]').forEach(function(el){el.addEventListener('mousemove',function(e){var r=el.getBoundingClientRect();el.style.transform='translate('+(e.clientX-r.left-r.width/2)*.25+'px,'+(e.clientY-r.top-r.height/2)*.4+'px)';});el.addEventListener('mouseleave',function(){el.style.transform='';});});}
+  document.querySelectorAll('.qty').forEach(function(q){var i=q.querySelector('input');q.children[0].onclick=function(){i.value=Math.max(10,(+i.value||10)-1)};q.children[2].onclick=function(){i.value=(+i.value||10)+1}});
+</script></body></html>

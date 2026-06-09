@@ -1,0 +1,17 @@
+{
+  "current": {
+    "color_ink": "#0B1220",
+    "color_bg": "#FFFFFF",
+    "color_surface": "#F6F8FC",
+    "color_accent": "#2563EB",
+    "color_accent_2": "#06B6D4",
+    "grad_start": "#2563EB",
+    "grad_end": "#06B6D4",
+    "type_scale": 1.18,
+    "page_width": 1320,
+    "radius": 18,
+    "enable_glass": true,
+    "enable_motion": true,
+    "org_sameas": ""
+  }
+}

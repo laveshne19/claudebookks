@@ -1,0 +1,177 @@
+{%- comment -%}
+  Professional Product Page Section — boAt / Amazon style
+  -------------------------------------------------------
+  HOW TO INSTALL (3 minutes, no internet/AI needed):
+  1. Shopify admin -> Online Store -> Themes -> (your live theme) -> "..." -> Edit code
+  2. Left sidebar -> Sections -> "Add a new section" -> name it: product-pro-details
+  3. DELETE everything in the new file, PASTE this whole file, Save.
+  4. Online Store -> Themes -> Customize -> open a Product page from the top dropdown
+  5. "Add section" -> choose "Pro Product Details" -> drag it where you want, edit text in the
+     right-hand panel (no code), Save.
+
+  Works on Dawn and most Online Store 2.0 themes. Colors/fonts inherit from your theme.
+{%- endcomment -%}
+
+<section class="pro-details" id="pro-details-{{ section.id }}">
+  <div class="pro-details__wrap">
+
+    {%- if section.settings.show_features -%}
+    <div class="pro-details__features">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'feature' -%}
+          <div class="pro-feature" {{ block.shopify_attributes }}>
+            {%- if block.settings.icon != blank -%}
+              <div class="pro-feature__icon">{{ block.settings.icon }}</div>
+            {%- endif -%}
+            <div class="pro-feature__title">{{ block.settings.title }}</div>
+            <div class="pro-feature__text">{{ block.settings.text }}</div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    {%- endif -%}
+
+    {%- if section.settings.show_trust -%}
+    <div class="pro-details__trust">
+      <span>✅ {{ section.settings.trust_1 }}</span>
+      <span>🚚 {{ section.settings.trust_2 }}</span>
+      <span>🔒 {{ section.settings.trust_3 }}</span>
+      <span>↩️ {{ section.settings.trust_4 }}</span>
+    </div>
+    {%- endif -%}
+
+    {%- assign has_specs = false -%}
+    {%- for block in section.blocks -%}{% if block.type == 'spec' %}{% assign has_specs = true %}{% endif %}{%- endfor -%}
+    {%- if has_specs -%}
+    <div class="pro-details__specs">
+      <h2 class="pro-details__h">{{ section.settings.specs_title }}</h2>
+      <table class="pro-spec-table">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'spec' -%}
+            <tr {{ block.shopify_attributes }}>
+              <th>{{ block.settings.label }}</th>
+              <td>{{ block.settings.value }}</td>
+            </tr>
+          {%- endif -%}
+        {%- endfor -%}
+      </table>
+    </div>
+    {%- endif -%}
+
+    {%- assign has_faq = false -%}
+    {%- for block in section.blocks -%}{% if block.type == 'faq' %}{% assign has_faq = true %}{% endif %}{%- endfor -%}
+    {%- if has_faq -%}
+    <div class="pro-details__faq">
+      <h2 class="pro-details__h">{{ section.settings.faq_title }}</h2>
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'faq' -%}
+          <details class="pro-faq" {{ block.shopify_attributes }}>
+            <summary>{{ block.settings.q }}</summary>
+            <div class="pro-faq__a">{{ block.settings.a }}</div>
+          </details>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+<style>
+  #pro-details-{{ section.id }} { padding: 32px 0; }
+  #pro-details-{{ section.id }} .pro-details__wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  #pro-details-{{ section.id }} .pro-details__h { font-size: 1.5rem; margin: 28px 0 14px; font-weight: 700; }
+
+  #pro-details-{{ section.id }} .pro-details__features {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+  }
+  #pro-details-{{ section.id }} .pro-feature {
+    text-align: center; padding: 18px 12px; border: 1px solid #ececec; border-radius: 14px; background: #fafafa;
+  }
+  #pro-details-{{ section.id }} .pro-feature__icon { font-size: 1.8rem; line-height: 1; margin-bottom: 8px; }
+  #pro-details-{{ section.id }} .pro-feature__title { font-weight: 700; font-size: .98rem; margin-bottom: 4px; }
+  #pro-details-{{ section.id }} .pro-feature__text { font-size: .82rem; color: #666; }
+
+  #pro-details-{{ section.id }} .pro-details__trust {
+    display: flex; flex-wrap: wrap; gap: 18px; justify-content: center;
+    padding: 14px; background: #f4f7ff; border-radius: 12px; margin-bottom: 8px;
+    font-size: .9rem; font-weight: 600;
+  }
+
+  #pro-details-{{ section.id }} .pro-spec-table { width: 100%; border-collapse: collapse; }
+  #pro-details-{{ section.id }} .pro-spec-table th,
+  #pro-details-{{ section.id }} .pro-spec-table td {
+    text-align: left; padding: 12px 14px; border-bottom: 1px solid #eee; font-size: .95rem;
+  }
+  #pro-details-{{ section.id }} .pro-spec-table th { width: 38%; background: #fafafa; font-weight: 600; }
+
+  #pro-details-{{ section.id }} .pro-faq {
+    border: 1px solid #ececec; border-radius: 10px; margin-bottom: 10px; padding: 4px 14px; background: #fff;
+  }
+  #pro-details-{{ section.id }} .pro-faq summary {
+    cursor: pointer; font-weight: 600; padding: 12px 0; list-style: none;
+  }
+  #pro-details-{{ section.id }} .pro-faq summary::-webkit-details-marker { display: none; }
+  #pro-details-{{ section.id }} .pro-faq summary::after { content: "+"; float: right; font-size: 1.3rem; color: #888; }
+  #pro-details-{{ section.id }} .pro-faq[open] summary::after { content: "–"; }
+  #pro-details-{{ section.id }} .pro-faq__a { padding: 0 0 14px; color: #555; font-size: .92rem; }
+
+  @media (max-width: 749px) {
+    #pro-details-{{ section.id }} .pro-details__features { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Pro Product Details",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    { "type": "checkbox", "id": "show_features", "label": "Show feature highlights", "default": true },
+    { "type": "checkbox", "id": "show_trust", "label": "Show trust badges", "default": true },
+    { "type": "text", "id": "trust_1", "label": "Trust badge 1", "default": "Cash on Delivery" },
+    { "type": "text", "id": "trust_2", "label": "Trust badge 2", "default": "Free Shipping" },
+    { "type": "text", "id": "trust_3", "label": "Trust badge 3", "default": "Secure Payments" },
+    { "type": "text", "id": "trust_4", "label": "Trust badge 4", "default": "Easy Returns" },
+    { "type": "text", "id": "specs_title", "label": "Specs heading", "default": "Specifications" },
+    { "type": "text", "id": "faq_title", "label": "FAQ heading", "default": "Frequently Asked Questions" }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature highlight",
+      "settings": [
+        { "type": "text", "id": "icon", "label": "Icon (emoji)", "default": "🔋" },
+        { "type": "text", "id": "title", "label": "Title", "default": "40H Playback" },
+        { "type": "text", "id": "text", "label": "Text", "default": "All-day battery life" }
+      ]
+    },
+    {
+      "type": "spec",
+      "name": "Specification row",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Battery" },
+        { "type": "text", "id": "value", "label": "Value", "default": "40 hours" }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "FAQ item",
+      "settings": [
+        { "type": "text", "id": "q", "label": "Question", "default": "Is there a warranty?" },
+        { "type": "textarea", "id": "a", "label": "Answer", "default": "Yes, 1-year manufacturer warranty." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Pro Product Details",
+      "blocks": [
+        { "type": "feature" }, { "type": "feature" }, { "type": "feature" }, { "type": "feature" },
+        { "type": "spec" }, { "type": "spec" }, { "type": "spec" },
+        { "type": "faq" }, { "type": "faq" }
+      ]
+    }
+  ]
+}
+{% endschema %}

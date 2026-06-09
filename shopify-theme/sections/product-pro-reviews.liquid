@@ -1,0 +1,57 @@
+{%- comment -%}
+  Product Reviews block — Amazon-style, powered by Judge.me (already installed)
+  ------------------------------------------------------------------
+  This drops the official Judge.me review widget into a clean, branded
+  container with a heading. When Judge.me is active, it auto-fills with
+  the star summary, rating breakdown, photos, and customer reviews.
+
+  Legitimate reviews only: use your Judge.me dashboard to import genuine
+  Amazon reviews (for the same product) and to auto-email past buyers for
+  reviews. Do not fabricate reviews — it violates Indian consumer law
+  (IS 19000:2022 / Consumer Protection Act) and Judge.me policy.
+
+  INSTALL: Edit code -> Sections -> Add a new section -> name it
+  "product-pro-reviews" -> paste this file -> Save -> add on the Product
+  page via Customize.
+{%- endcomment -%}
+
+<section class="prv" id="prv-{{ section.id }}">
+  <div class="prv__wrap">
+    <h2 class="prv__h">{{ section.settings.heading }}</h2>
+
+    {%- comment -%} Judge.me preview badge (star summary). {%- endcomment -%}
+    <div class="prv__summary">
+      <div class="jdgm-widget jdgm-preview-badge" data-id="{{ product.id }}"></div>
+    </div>
+
+    {%- comment -%} Judge.me main review widget (full list + write-a-review). {%- endcomment -%}
+    <div class="jdgm-widget jdgm-review-widget" data-id="{{ product.id }}">
+      {{ product.metafields.judgeme.widget }}
+    </div>
+
+    {%- if section.settings.note != blank -%}
+      <p class="prv__note">{{ section.settings.note }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+<style>
+  #prv-{{ section.id }} { padding: 32px 0; }
+  #prv-{{ section.id }} .prv__wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  #prv-{{ section.id }} .prv__h { font-size: 1.5rem; font-weight: 700; margin: 0 0 14px; }
+  #prv-{{ section.id }} .prv__summary { margin-bottom: 18px; }
+  #prv-{{ section.id }} .prv__note { font-size: .82rem; color: #888; margin-top: 14px; }
+</style>
+
+{% schema %}
+{
+  "name": "Product Reviews",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Ratings & Reviews" },
+    { "type": "text", "id": "note", "label": "Small print", "default": "Reviews are from verified buyers." }
+  ],
+  "presets": [{ "name": "Product Reviews" }]
+}
+{% endschema %}
