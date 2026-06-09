@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "hero": { "type": "hero" },
+    "value_props": {
+      "type": "value-props",
+      "blocks": {
+        "v1": { "type": "item", "settings": { "icon": "🧾", "title": "GST Invoicing", "text": "Proper GST invoice on every order." } },
+        "v2": { "type": "item", "settings": { "icon": "📦", "title": "Low MOQ", "text": "Start small, scale as you grow." } },
+        "v3": { "type": "item", "settings": { "icon": "🚚", "title": "Bulk Dispatch", "text": "Fast pan-India shipping." } },
+        "v4": { "type": "item", "settings": { "icon": "✅", "title": "Authorised Stock", "text": "100% genuine, warranty-backed." } }
+      },
+      "block_order": ["v1", "v2", "v3", "v4"]
+    },
+    "catalogue": { "type": "featured-collection", "settings": { "eyebrow": "Wholesale catalogue", "title": "Top moving stock" } },
+    "brands": { "type": "brand-showcase" },
+    "deals": { "type": "featured-collection", "settings": { "eyebrow": "Clearance & deals", "title": "Best margins" } },
+    "trade": { "type": "trade-cta" }
+  },
+  "order": ["hero", "value_props", "catalogue", "brands", "deals", "trade"]
+}

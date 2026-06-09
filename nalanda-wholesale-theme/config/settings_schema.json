@@ -1,0 +1,58 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Nalanda Wholesale",
+    "theme_version": "1.0.0",
+    "theme_author": "Nalanda Enterprises"
+  },
+  {
+    "name": "Brand & Colors",
+    "settings": [
+      { "type": "header", "content": "Core palette" },
+      { "type": "color", "id": "color_ink", "label": "Ink (text/dark)", "default": "#0B1220" },
+      { "type": "color", "id": "color_bg", "label": "Background", "default": "#FFFFFF" },
+      { "type": "color", "id": "color_surface", "label": "Surface (cards)", "default": "#F4F7FB" },
+      { "type": "color", "id": "color_accent", "label": "Trade accent", "default": "#1D4ED8" },
+      { "type": "color", "id": "color_accent_2", "label": "Accent 2", "default": "#059669" },
+      { "type": "color", "id": "grad_start", "label": "Gradient start", "default": "#1D4ED8" },
+      { "type": "color", "id": "grad_end", "label": "Gradient end", "default": "#0EA5E9" }
+    ]
+  },
+  {
+    "name": "Typography",
+    "settings": [
+      { "type": "font_picker", "id": "font_heading", "label": "Heading font", "default": "assistant_n4" },
+      { "type": "font_picker", "id": "font_body", "label": "Body font", "default": "assistant_n4" },
+      { "type": "range", "id": "type_scale", "label": "Type scale", "min": 1.0, "max": 1.35, "step": 0.01, "unit": "x", "default": 1.14 }
+    ]
+  },
+  {
+    "name": "Layout",
+    "settings": [
+      { "type": "range", "id": "page_width", "label": "Max content width", "min": 1100, "max": 1600, "step": 20, "unit": "px", "default": 1360 },
+      { "type": "range", "id": "radius", "label": "Corner radius", "min": 0, "max": 32, "step": 1, "unit": "px", "default": 14 },
+      { "type": "checkbox", "id": "enable_glass", "label": "Enable glassmorphism", "default": true },
+      { "type": "checkbox", "id": "enable_motion", "label": "Enable scroll animations", "default": true }
+    ]
+  },
+  {
+    "name": "Wholesale / B2B",
+    "settings": [
+      { "type": "range", "id": "default_moq", "label": "Default minimum order qty (MOQ)", "min": 1, "max": 100, "step": 1, "default": 1 },
+      { "type": "checkbox", "id": "show_per_unit", "label": "Show 'per unit' on prices", "default": true },
+      { "type": "text", "id": "whatsapp", "label": "WhatsApp number for bulk enquiries (e.g. 9198XXXXXXXX)" },
+      { "type": "text", "id": "gstin", "label": "GSTIN (shown in footer)" },
+      { "type": "text", "id": "trade_note", "label": "Trade banner note", "default": "GST invoice on every order · Pan-India bulk dispatch" }
+    ]
+  },
+  {
+    "name": "Analytics & SEO",
+    "settings": [
+      { "type": "text", "id": "gtm_id", "label": "Google Tag Manager ID" },
+      { "type": "text", "id": "ga4_id", "label": "GA4 Measurement ID" },
+      { "type": "text", "id": "meta_pixel_id", "label": "Meta Pixel ID" },
+      { "type": "text", "id": "clarity_id", "label": "Microsoft Clarity ID" },
+      { "type": "textarea", "id": "org_sameas", "label": "Organization social URLs (one per line)" }
+    ]
+  }
+]

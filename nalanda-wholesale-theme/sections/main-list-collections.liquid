@@ -1,0 +1,12 @@
+<section class="section"><div class="wrap">
+  <h1 class="h2" data-reveal>Collections</h1>
+  <div class="grid grid--3" data-reveal-stagger>
+    {%- for collection in collections -%}
+      <a class="card" href="{{ collection.url }}">
+        <div class="card__media">{%- if collection.featured_image -%}<img src="{{ collection.featured_image | image_url: width: 600 }}" alt="{{ collection.title | escape }}" width="600" height="600" loading="lazy">{%- else -%}{{ 'collection-1' | placeholder_svg_tag }}{%- endif -%}</div>
+        <div class="card__body"><h3 class="card__title">{{ collection.title }}</h3><span class="muted" style="font-size:.85rem">{{ collection.products_count }} products</span></div>
+      </a>
+    {%- endfor -%}
+  </div>
+</div></section>
+{% schema %}{ "name": "List collections", "settings": [] }{% endschema %}

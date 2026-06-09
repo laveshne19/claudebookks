@@ -1,0 +1,37 @@
+<section class="section" aria-label="{{ section.settings.title | escape }}">
+  <div class="wrap">
+    <div style="display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:var(--gap)" data-reveal>
+      <div>
+        {%- if section.settings.eyebrow != blank -%}<p class="eyebrow">{{ section.settings.eyebrow }}</p>{%- endif -%}
+        <h2 class="h2">{{ section.settings.title }}</h2>
+      </div>
+      {%- if section.settings.collection != blank -%}<a class="btn btn--ghost" href="{{ collections[section.settings.collection].url }}">View all →</a>{%- endif -%}
+    </div>
+
+    <div class="grid grid--4" data-reveal-stagger>
+      {%- assign coll = collections[section.settings.collection] -%}
+      {%- if coll.products.size > 0 -%}
+        {%- for product in coll.products limit: section.settings.count -%}
+          {% render 'product-card', product: product %}
+        {%- endfor -%}
+      {%- else -%}
+        {%- for i in (1..4) -%}
+          <article class="card"><div class="card__media">{{ 'product-1' | placeholder_svg_tag }}</div><div class="card__body"><div class="card__brand">Brand</div><h3 class="card__title">Sample gadget</h3><div class="card__price">₹—</div></div></article>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Trending now" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Best sellers" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    { "type": "range", "id": "count", "label": "Products", "min": 4, "max": 12, "step": 4, "default": 8 }
+  ],
+  "presets": [{ "name": "Featured collection" }]
+}
+{% endschema %}

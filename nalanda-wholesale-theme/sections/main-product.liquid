@@ -1,0 +1,94 @@
+{%- assign moq = product.metafields.custom.moq.value | default: settings.default_moq | default: 1 -%}
+{%- assign tiers = product.metafields.custom.tier_prices.value -%}
+
+<section class="section">
+  <div class="wrap">
+    <nav aria-label="Breadcrumb" style="font-size:.82rem;color:var(--ink-40);margin-bottom:18px">
+      <a href="{{ routes.root_url }}">Home</a> / {% if collection %}<a href="{{ collection.url }}">{{ collection.title }}</a> / {% endif %}<span>{{ product.title }}</span>
+    </nav>
+
+    <div class="pdp" data-variants>
+      <div class="pdp__gallery" data-gallery>
+        <div class="gallery__main">
+          {%- if product.featured_image -%}<img data-gallery-main src="{{ product.featured_image | image_url: width: 1200 }}" alt="{{ product.featured_image.alt | default: product.title | escape }}" width="1200" height="1200" fetchpriority="high">
+          {%- else -%}{{ 'product-1' | placeholder_svg_tag }}{%- endif -%}
+        </div>
+        {%- if product.images.size > 1 -%}
+        <div class="gallery__thumbs">
+          {%- for image in product.images -%}
+            <button type="button" data-gallery-thumb data-full="{{ image | image_url: width: 1200 }}" aria-current="{% if forloop.first %}true{% else %}false{% endif %}" aria-label="View image {{ forloop.index }}"><img src="{{ image | image_url: width: 160 }}" alt="" width="64" height="64" loading="lazy" style="width:100%;height:100%;object-fit:cover"></button>
+          {%- endfor -%}
+        </div>
+        {%- endif -%}
+      </div>
+
+      <div data-buy-anchor>
+        {%- if product.vendor != blank -%}<div class="pdp__brand">{{ product.vendor }}</div>{%- endif -%}
+        <h1 class="pdp__title">{{ product.title }}</h1>
+
+        <div class="pdp__price">
+          <span data-current-price>{{ product.price | money }}</span>{%- if settings.show_per_unit -%}<span class="per-unit">/unit</span>{%- endif -%}
+          {%- if product.compare_at_price > product.price -%}<del>{{ product.compare_at_price | money }}</del>{%- endif -%}
+        </div>
+        <div class="moq-row">Minimum order: <strong>{{ moq }} units</strong> · GST extra as applicable</div>
+
+        {%- comment -%} ---- Tier pricing table (metafield custom.tier_prices: list of "qty|₹price") ---- {%- endcomment -%}
+        {%- if tiers -%}
+        <table class="tier-table">
+          <tr><th>Quantity</th><th>Price / unit</th></tr>
+          {%- for t in tiers -%}{%- assign parts = t | split: '|' -%}<tr><td>{{ parts.first }}+ units</td><td><strong>{{ parts.last }}</strong></td></tr>{%- endfor -%}
+        </table>
+        {%- else -%}
+        <p class="muted" style="font-size:.88rem">Volume pricing available — add a bulk quantity or request a quote.</p>
+        {%- endif -%}
+
+        <form method="post" action="{{ routes.cart_add_url }}" class="pdp__buy" style="align-items:center">
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-variant-id>
+          <div class="qty" data-qty data-min="{{ moq }}">
+            <button type="button" data-qty-dec aria-label="Decrease">−</button>
+            <input type="number" name="quantity" value="{{ moq }}" min="{{ moq }}" step="1" aria-label="Quantity" data-qty-input>
+            <button type="button" data-qty-inc aria-label="Increase">+</button>
+          </div>
+          <button type="submit" class="btn btn--accent magnetic" data-magnetic {% unless product.available %}disabled{% endunless %} style="flex:1">
+            {% if product.available %}Add to bulk order{% else %}Out of stock{% endif %}
+          </button>
+        </form>
+
+        {%- if settings.whatsapp != blank -%}
+        <a class="btn btn--ghost btn--block" style="margin-top:10px" target="_blank" rel="noopener"
+           href="https://wa.me/{{ settings.whatsapp }}?text=Bulk%20quote%20request%3A%20{{ product.title | url_encode }}">💬 Request a bulk quote on WhatsApp</a>
+        {%- endif -%}
+
+        <div class="pdp__trust">
+          {%- for block in section.blocks -%}{%- if block.type == 'trust' -%}<span {{ block.shopify_attributes }}>{{ block.settings.text }}</span>{%- endif -%}{%- endfor -%}
+        </div>
+
+        {%- if product.description != blank -%}<div class="pdp__block rte">{{ product.description }}</div>{%- endif -%}
+
+        {%- assign specs = section.blocks | where: 'type', 'spec' -%}
+        {%- if specs.size > 0 -%}
+        <div class="pdp__block"><h2 class="h2" style="font-size:1.2rem">Specifications</h2>
+          <table class="spec-table">{%- for block in specs -%}<tr {{ block.shopify_attributes }}><th>{{ block.settings.label }}</th><td>{{ block.settings.value }}</td></tr>{%- endfor -%}</table>
+        </div>
+        {%- endif -%}
+
+        <div class="pdp__block">
+          <h2 class="h2" style="font-size:1.2rem">Dealer & dispatch</h2>
+          <div class="muted" style="font-size:.92rem">GST invoice provided on every order. Pan-India dispatch via Shiprocket/Delhivery. Bulk lead times shared on confirmation. Become an authorised dealer for standing trade pricing.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product",
+  "blocks": [
+    { "type": "trust", "name": "Trust badge", "settings": [ { "type": "text", "id": "text", "label": "Text", "default": "🧾 GST Invoice" } ] },
+    { "type": "spec", "name": "Spec row", "settings": [
+      { "type": "text", "id": "label", "label": "Label", "default": "Warranty" },
+      { "type": "text", "id": "value", "label": "Value", "default": "1 Year brand warranty" } ] }
+  ]
+}
+{% endschema %}

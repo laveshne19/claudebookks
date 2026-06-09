@@ -1,0 +1,29 @@
+<section class="section">
+  <div class="wrap">
+    <div class="trade-cta glass" data-reveal>
+      <div>
+        <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+        <h2 class="h2" style="margin:0">{{ section.settings.title }}</h2>
+        <p class="muted" style="margin:8px 0 0;max-width:52ch">{{ section.settings.text }}</p>
+      </div>
+      <div class="trade-cta__btns">
+        {%- if section.settings.cta_text != blank -%}<a class="btn btn--accent" href="{{ section.settings.cta_url }}">{{ section.settings.cta_text }}</a>{%- endif -%}
+        {%- if settings.whatsapp != blank -%}<a class="btn btn--ghost" target="_blank" rel="noopener" href="https://wa.me/{{ settings.whatsapp }}?text=I%27d%20like%20to%20become%20a%20dealer">💬 WhatsApp us</a>{%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Trade CTA",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Become a dealer" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Open a wholesale account" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Get standing trade prices, priority stock, GST invoicing and dedicated support for your retail or distribution business." },
+    { "type": "text", "id": "cta_text", "label": "CTA text", "default": "Apply for dealer pricing" },
+    { "type": "url", "id": "cta_url", "label": "CTA link" }
+  ],
+  "presets": [{ "name": "Trade CTA" }]
+}
+{% endschema %}

@@ -1,0 +1,16 @@
+<section class="section"><div class="wrap" style="max-width:840px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <h1 class="h2">Hello, {{ customer.first_name | default: 'there' }}</h1>
+    <a class="btn btn--ghost" href="{{ routes.account_logout_url }}">Logout</a>
+  </div>
+  <h2 style="font-size:1.1rem;margin-top:24px">Order history</h2>
+  {%- if customer.orders.size > 0 -%}
+    <table class="spec-table">
+      <tr><th>Order</th><th>Date</th><th>Total</th><th>Status</th></tr>
+      {%- for order in customer.orders -%}
+        <tr><td><a href="{{ order.customer_url }}">{{ order.name }}</a></td><td>{{ order.created_at | date: '%b %d, %Y' }}</td><td>{{ order.total_price | money }}</td><td>{{ order.fulfillment_status_label }}</td></tr>
+      {%- endfor -%}
+    </table>
+  {%- else -%}<p class="muted">No orders yet.</p>{%- endif -%}
+  <p style="margin-top:16px"><a href="{{ routes.account_addresses_url }}">Manage addresses</a></p>
+</div></section>
