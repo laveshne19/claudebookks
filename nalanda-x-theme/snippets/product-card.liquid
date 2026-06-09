@@ -1,0 +1,39 @@
+{%- comment -%} Usage: {% render 'product-card', product: product %} {%- endcomment -%}
+{%- assign p = product -%}
+{%- assign on_sale = false -%}
+{%- if p.compare_at_price > p.price -%}{%- assign on_sale = true -%}{%- endif -%}
+
+<article class="card" data-reveal>
+  <a href="{{ p.url }}" class="card__media" aria-label="{{ p.title | escape }}">
+    {%- if on_sale -%}<span class="card__badge">{{ 'products.product.save' | t }} {{ p.compare_at_price | minus: p.price | times: 100.0 | divided_by: p.compare_at_price | round }}%</span>{%- endif -%}
+    {%- if p.featured_image -%}
+      <img src="{{ p.featured_image | image_url: width: 600 }}"
+           srcset="{{ p.featured_image | image_url: width: 300 }} 300w, {{ p.featured_image | image_url: width: 600 }} 600w"
+           sizes="(max-width:749px) 45vw, 22vw"
+           alt="{{ p.featured_image.alt | default: p.title | escape }}" width="600" height="600" loading="lazy">
+      {%- if p.images[1] -%}
+        <img class="alt" src="{{ p.images[1] | image_url: width: 600 }}" alt="" width="600" height="600" loading="lazy">
+      {%- endif -%}
+    {%- else -%}
+      {{ 'product-1' | placeholder_svg_tag: 'card__media' }}
+    {%- endif -%}
+  </a>
+  <div class="card__body">
+    {%- if p.vendor != blank -%}<div class="card__brand">{{ p.vendor }}</div>{%- endif -%}
+    <h3 class="card__title"><a href="{{ p.url }}">{{ p.title }}</a></h3>
+    <div class="card__price">
+      {{ p.price | money }}
+      {%- if on_sale -%}<del>{{ p.compare_at_price | money }}</del>{%- endif -%}
+    </div>
+    <div class="card__quick">
+      {%- if p.available -%}
+        <form method="post" action="{{ routes.cart_add_url }}">
+          <input type="hidden" name="id" value="{{ p.selected_or_first_available_variant.id }}">
+          <button type="submit" class="btn btn--accent btn--block">{{ 'general.cart.add' | t }}</button>
+        </form>
+      {%- else -%}
+        <a class="btn btn--ghost btn--block" href="{{ p.url }}">{{ 'products.product.sold_out' | t }}</a>
+      {%- endif -%}
+    </div>
+  </div>
+</article>

@@ -1,0 +1,32 @@
+<section class="section" aria-label="Why Nalanda Enterprises">
+  <div class="wrap">
+    <div class="vp" data-reveal-stagger>
+      {%- for block in section.blocks -%}
+        <div class="vp__item" {{ block.shopify_attributes }}>
+          <div class="vp__ic">{{ block.settings.icon }}</div>
+          <div class="vp__t">{{ block.settings.title }}</div>
+          <div class="muted" style="font-size:.88rem">{{ block.settings.text }}</div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Value props",
+  "blocks": [
+    { "type": "item", "name": "Value", "settings": [
+      { "type": "text", "id": "icon", "label": "Icon", "default": "✅" },
+      { "type": "text", "id": "title", "label": "Title", "default": "100% Genuine" },
+      { "type": "text", "id": "text", "label": "Text", "default": "Brand-authorised, warranty-backed products." }
+    ]}
+  ],
+  "presets": [{ "name": "Value props", "blocks": [
+    { "type": "item", "settings": { "icon": "✅", "title": "100% Genuine", "text": "Brand-authorised, warranty-backed." } },
+    { "type": "item", "settings": { "icon": "🚚", "title": "Fast Delivery", "text": "Pan-India shipping, COD available." } },
+    { "type": "item", "settings": { "icon": "🔒", "title": "Secure Payments", "text": "UPI, cards, net-banking, EMI." } },
+    { "type": "item", "settings": { "icon": "↩️", "title": "Easy Returns", "text": "Hassle-free 7-day returns." } }
+  ]}]
+}
+{% endschema %}

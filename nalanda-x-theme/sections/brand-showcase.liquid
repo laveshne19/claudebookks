@@ -1,0 +1,23 @@
+<section class="section" aria-label="Brands">
+  <div class="wrap" data-reveal>
+    {%- if section.settings.title != blank -%}<p class="eyebrow" style="text-align:center;margin-bottom:24px">{{ section.settings.title }}</p>{%- endif -%}
+  </div>
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee__track">
+      {%- assign brands = section.settings.brands | split: ',' -%}
+      {%- for b in brands -%}<span>{{ b | strip }}</span>{%- endfor -%}
+      {%- for b in brands -%}<span>{{ b | strip }}</span>{%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Brand showcase",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Eyebrow", "default": "Trusted brands we carry" },
+    { "type": "text", "id": "brands", "label": "Brands (comma separated)", "default": "boAt, Noise, Fire-Boltt, Logitech, Swiss Military, Portronics, Mivi, Amazon" }
+  ],
+  "presets": [{ "name": "Brand showcase" }]
+}
+{% endschema %}

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="{{ settings.color_ink }}">
+  <link rel="canonical" href="{{ canonical_url }}">
+  <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+
+  {%- comment -%} Inject design tokens from theme settings {%- endcomment -%}
+  <style>
+    :root{
+      --maxw: {{ settings.page_width | default: 1320 }}px;
+      --radius: {{ settings.radius | default: 18 }}px;
+      --ink: {{ settings.color_ink }};
+      --bg: {{ settings.color_bg }};
+      --surface: {{ settings.color_surface }};
+      --accent: {{ settings.color_accent }};
+      --accent-2: {{ settings.color_accent_2 }};
+      --grad: linear-gradient(120deg, {{ settings.grad_start }}, {{ settings.grad_end }});
+    }
+    {%- unless settings.enable_glass -%}.glass{ -webkit-backdrop-filter:none; backdrop-filter:none; background:var(--bg); }{%- endunless -%}
+    {%- unless settings.enable_motion -%}[data-reveal],[data-reveal-stagger]>*{opacity:1!important;transform:none!important}{%- endunless -%}
+  </style>
+
+  {{ settings.font_heading | font_face: font_display: 'swap' }}
+  {{ settings.font_body | font_face: font_display: 'swap' }}
+  <style>:root{ --font-heading: {{ settings.font_heading.family }}, sans-serif; --font-body: {{ settings.font_body.family }}, system-ui, sans-serif; }</style>
+
+  {{ 'nalanda.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'nalanda.js' | asset_url }}" defer></script>
+
+  {% render 'meta-tags' %}
+  {% render 'structured-data' %}
+
+  {%- comment -%} ---- Analytics (IDs set in theme settings) ---- {%- endcomment -%}
+  {%- if settings.gtm_id != blank -%}
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ settings.gtm_id }}');</script>
+  {%- endif -%}
+  {%- if settings.ga4_id != blank -%}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ settings.ga4_id }}"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ settings.ga4_id }}');</script>
+  {%- endif -%}
+  {%- if settings.clarity_id != blank -%}
+    <script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","{{ settings.clarity_id }}");</script>
+  {%- endif -%}
+  {%- if settings.meta_pixel_id != blank -%}
+    <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ settings.meta_pixel_id }}');fbq('track','PageView');</script>
+  {%- endif -%}
+
+  {{ content_for_header }}
+</head>
+<body class="template-{{ request.page_type | handle }}">
+  {%- if settings.gtm_id != blank -%}<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ settings.gtm_id }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>{%- endif -%}
+
+  <a class="skip-link" href="#MainContent">{{ 'general.accessibility.skip_to_content' | t }}</a>
+
+  {% section 'header' %}
+
+  <main id="MainContent" role="main">
+    {{ content_for_layout }}
+  </main>
+
+  {% section 'footer' %}
+  {% render 'cart-drawer' %}
+</body>
+</html>
