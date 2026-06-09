@@ -1,0 +1,9 @@
+<article class="section"><div class="wrap" style="max-width:760px">
+  <a href="{{ blog.url }}" class="muted" style="font-size:.85rem">← {{ blog.title }}</a>
+  <h1 class="display" style="font-size:var(--fs-h1);margin-top:12px" data-reveal>{{ article.title }}</h1>
+  <p class="muted">{{ article.published_at | date: '%B %d, %Y' }} · {{ article.author }}</p>
+  {%- if article.image -%}<img src="{{ article.image | image_url: width: 1400 }}" alt="{{ article.title | escape }}" width="1400" height="800" style="border-radius:var(--radius);margin:20px 0" data-reveal>{%- endif -%}
+  <div class="rte" data-reveal>{{ article.content }}</div>
+  {%- if blog.comments_enabled? -%}<div class="pdp__block">{% comment %}Comments enabled{% endcomment %}</div>{%- endif -%}
+</div></article>
+{% schema %}{ "name": "Article", "settings": [] }{% endschema %}
