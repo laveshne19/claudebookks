@@ -1,6 +1,11 @@
-"""Background scheduler — refreshes customer aggregates every hour (live-feel even before Zoho).
+"""Background scheduler.
 
-Once Zoho credentials are added, the same job slot will trigger zoho_sync.fetch().
+Two independent jobs:
+  * local_aggregate_job — hourly, recomputes customer outstanding/overdue from LOCAL
+    data. Zero Zoho API calls. Keeps the dashboard fresh between daily Zoho pulls.
+  * zoho_daily_job — once a day (ZOHO_SYNC_HOUR, default 02:00 IST). Incremental:
+    pulls only records changed since the last successful sync. Disable with
+    ZOHO_AUTOSYNC_ENABLED=false.
 """
 import logging
 from datetime import datetime, timezone
@@ -65,31 +70,77 @@ async def refresh_customer_aggregates(db):
     logger.info("Aggregates refreshed for %d customers", len(customers))
 
 
+# Guards against a slow sync overlapping the next scheduled run.
+_zoho_sync_running = False
+
+
 def start_scheduler(db):
     global scheduler
     if scheduler:
         return scheduler
+    import os
     scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
 
-    async def hourly_job():
-        # If Zoho is configured, run a Zoho sync; otherwise refresh local aggregates
+    def _truthy(v: str | None, default: bool) -> bool:
+        if v is None:
+            return default
+        return v.strip().lower() in {"1", "true", "yes", "on"}
+
+    autosync_enabled = _truthy(os.environ.get("ZOHO_AUTOSYNC_ENABLED"), True)
+    try:
+        sync_hour = int(os.environ.get("ZOHO_SYNC_HOUR", "2"))  # 2 AM IST by default
+    except ValueError:
+        sync_hour = 2
+
+    async def local_aggregate_job():
+        """Hourly — recompute customer outstanding/overdue from LOCAL data only.
+        Makes ZERO Zoho API calls; keeps the dashboard fresh between daily Zoho pulls."""
         try:
-            import os
-            zoho_ready = bool(os.environ.get("ZOHO_CLIENT_ID") and os.environ.get("ZOHO_CLIENT_SECRET") and os.environ.get("ZOHO_REFRESH_TOKEN"))
-            if zoho_ready:
-                from zoho_sync import sync_zoho
-                cfg = await db.config.find_one({"key": "zoho"}, {"_id": 0})
-                if cfg and cfg.get("region") and cfg.get("organization_id"):
-                    await sync_zoho(db, modified_since_hours=2)
-                    return
             await refresh_customer_aggregates(db)
         except Exception as e:
-            logger.exception("Scheduled job failed: %s", e)
+            logger.exception("Local aggregate refresh failed: %s", e)
 
-    # Every 30 minutes — pulls live Zoho data or refreshes aggregates
-    scheduler.add_job(hourly_job, "interval", minutes=30, id="refresh_aggregates", next_run_time=None)
+    async def zoho_daily_job():
+        """Once per day — incremental Zoho sync: only records changed since the last
+        successful run (checkpoint), falling back to the last 24h on first run."""
+        global _zoho_sync_running
+        if _zoho_sync_running:
+            logger.info("Zoho daily sync skipped — a sync is already running")
+            return
+        zoho_ready = bool(
+            os.environ.get("ZOHO_CLIENT_ID")
+            and os.environ.get("ZOHO_CLIENT_SECRET")
+            and os.environ.get("ZOHO_REFRESH_TOKEN")
+        )
+        if not zoho_ready:
+            return
+        cfg = await db.config.find_one({"key": "zoho"}, {"_id": 0})
+        if not (cfg and cfg.get("region") and cfg.get("organization_id")):
+            return
+        _zoho_sync_running = True
+        try:
+            from zoho_sync import sync_zoho
+            result = await sync_zoho(db, use_checkpoint=True)
+            logger.info("Zoho daily sync: %s", result.get("message", result.get("status")))
+        except Exception as e:
+            logger.exception("Zoho daily sync failed: %s", e)
+        finally:
+            _zoho_sync_running = False
+
+    # Local aggregates: hourly, no Zoho calls.
+    scheduler.add_job(local_aggregate_job, "interval", hours=1, id="refresh_aggregates")
+
+    # Zoho: once a day at ZOHO_SYNC_HOUR (IST), incremental only.
+    if autosync_enabled:
+        scheduler.add_job(zoho_daily_job, "cron", hour=sync_hour, minute=0, id="zoho_daily_sync")
+        logger.info(
+            "Scheduler started — hourly local aggregates + daily incremental Zoho sync at %02d:00 IST",
+            sync_hour,
+        )
+    else:
+        logger.info("Scheduler started — hourly local aggregates; Zoho auto-sync DISABLED (ZOHO_AUTOSYNC_ENABLED=false)")
+
     scheduler.start()
-    logger.info("Scheduler started — 30-min sync (Zoho if configured, else local aggregates)")
     return scheduler
 
 
