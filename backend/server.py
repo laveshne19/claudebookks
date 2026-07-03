@@ -838,10 +838,14 @@ async def report_productivity(user=Depends(get_current_user)):
 
 # ========== ZOHO SYNC (LIVE) ==========
 @api.post("/sync/zoho")
-async def trigger_zoho_sync(current=Depends(require_roles("super_admin", "admin"))):
-    """Live Zoho Books sync. Pulls customers, invoices, payments, credit notes."""
+async def trigger_zoho_sync(full: bool = False, current=Depends(require_roles("super_admin", "admin"))):
+    """Live Zoho Books sync. Pulls customers, invoices, payments, credit notes.
+
+    Incremental by default (only records changed since the last successful sync) to
+    conserve Zoho API credits. Pass ?full=true for a one-off full-org reconcile.
+    """
     if zoho_creds_present():
-        return await sync_zoho(db)
+        return await sync_zoho(db, use_checkpoint=not full)
     try:
         await refresh_customer_aggregates(db)
         log = {

@@ -208,11 +208,18 @@ async def _sync_salespersons(db, client: httpx.AsyncClient, api_base: str, heade
 
 
 
-async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
+async def sync_zoho(db, modified_since_hours: Optional[int] = None, use_checkpoint: bool = False) -> dict:
     """Pull customers, invoices, payments, credit_notes from Zoho Books → MongoDB.
 
     Preserves local fields on customers (assigned_to, lat, lng, brand_preferences, area).
     Idempotent: matches on Zoho id stored as zoho_contact_id / zoho_invoice_id / zoho_payment_id.
+
+    Sync window (controls how many Zoho API calls we burn):
+      * use_checkpoint=True  → incremental. Only records modified since the last
+        successful sync (stored as config.zoho.last_sync_time). First ever run
+        falls back to the last 24 hours. This is what the daily scheduler uses.
+      * modified_since_hours=N → incremental over a fixed N-hour window.
+      * neither                → FULL pull of the entire org (expensive; manual only).
     """
     started = datetime.now(timezone.utc)
     log_id = f"zoho-{int(started.timestamp())}"
@@ -249,9 +256,30 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
 
     headers = {"Authorization": f"Zoho-oauthtoken {token}"}
     params = {"organization_id": org_id}
-    if modified_since_hours:
-        since = (started - timedelta(hours=modified_since_hours)).strftime("%Y-%m-%dT%H:%M:%S%z")
-        params["last_modified_time"] = since
+
+    # ---- Determine the incremental window (so we don't re-pull the whole org) ----
+    since_dt: Optional[datetime] = None
+    window_desc = "full"
+    if use_checkpoint:
+        checkpoint = cfg.get("last_sync_time")
+        if checkpoint:
+            try:
+                since_dt = datetime.fromisoformat(checkpoint)
+                window_desc = f"since last sync ({checkpoint})"
+            except Exception:
+                since_dt = None
+        if since_dt is None:
+            # First ever run: seed from the last 24 hours.
+            since_dt = started - timedelta(hours=24)
+            window_desc = "last 24h (first run, no checkpoint)"
+    elif modified_since_hours:
+        since_dt = started - timedelta(hours=modified_since_hours)
+        window_desc = f"last {modified_since_hours}h"
+
+    if since_dt is not None:
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+        params["last_modified_time"] = since_dt.strftime("%Y-%m-%dT%H:%M:%S%z")
 
     counts = {"customers": 0, "invoices": 0, "payments": 0, "credit_notes": 0, "errors": 0}
 
@@ -408,6 +436,17 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
         log.pop("_id", None)
         return log
 
+    # Advance the checkpoint so the next run only fetches what changed after this one.
+    # We stamp `started` (not "now") so records modified mid-sync are re-checked next time.
+    # Upserts are idempotent, so a small overlap is harmless.
+    try:
+        await db.config.update_one(
+            {"key": "zoho"},
+            {"$set": {"last_sync_time": started.isoformat()}},
+        )
+    except Exception:
+        logger.warning("Failed to advance Zoho sync checkpoint")
+
     # Recompute aggregates
     try:
         from scheduler import refresh_customer_aggregates
@@ -423,8 +462,9 @@ async def sync_zoho(db, modified_since_hours: Optional[int] = None) -> dict:
         "type": "zoho_sync",
         "region": region,
         "organization_id": org_id,
+        "window": window_desc,
         "synced": counts,
-        "message": f"Synced {counts['customers']} customers, {counts['invoices']} invoices, {counts['payments']} payments, {counts['credit_notes']} credit notes.",
+        "message": f"Synced {counts['customers']} customers, {counts['invoices']} invoices, {counts['payments']} payments, {counts['credit_notes']} credit notes ({window_desc}).",
     }
     await db.sync_logs.insert_one(log)
     log.pop("_id", None)

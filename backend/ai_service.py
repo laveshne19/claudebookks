@@ -3,9 +3,23 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 logger = logging.getLogger(__name__)
+
+# emergentintegrations ships only on the Emergent platform package index. On a
+# generic host (e.g. a self-managed VPS) it may be absent — the import is made
+# optional so the service still boots and AI features degrade to deterministic
+# fallbacks instead of crashing at import time.
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    _EMERGENT_AVAILABLE = True
+except ImportError:  # pragma: no cover - depends on deployment environment
+    LlmChat = None
+    UserMessage = None
+    _EMERGENT_AVAILABLE = False
+    logger.warning(
+        "emergentintegrations not installed — AI insights will use deterministic fallbacks."
+    )
 
 
 def _build_customer_brief(customer: dict, invoices: list, payments: list) -> str:
@@ -57,7 +71,7 @@ async def generate_customer_insights(customer: dict, invoices: list, payments: l
     """Generate AI-powered customer insights using Claude Sonnet 4.5."""
     brief = _build_customer_brief(customer, invoices, payments)
     api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
+    if not api_key or not _EMERGENT_AVAILABLE:
         return _fallback_insights(customer)
 
     system_message = (

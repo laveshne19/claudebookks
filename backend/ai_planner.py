@@ -3,9 +3,17 @@ import os
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 logger = logging.getLogger(__name__)
+
+# Optional on non-Emergent hosts (e.g. a self-managed VPS) — see ai_service.py.
+try:
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    _EMERGENT_AVAILABLE = True
+except ImportError:  # pragma: no cover - depends on deployment environment
+    LlmChat = None
+    UserMessage = None
+    _EMERGENT_AVAILABLE = False
 
 
 async def generate_route_plan(user: dict, customers: list, max_stops: int = 10) -> dict:
@@ -36,7 +44,7 @@ async def generate_route_plan(user: dict, customers: list, max_stops: int = 10) 
 
     # Deterministic ranking fallback always available
     fallback = _fallback_route_plan(user, stops, max_stops)
-    if not api_key:
+    if not api_key or not _EMERGENT_AVAILABLE:
         return fallback
 
     system_message = (
@@ -152,7 +160,7 @@ async def generate_performance_analysis(user: dict, target: dict, invoices: list
     }
 
     fallback = _fallback_performance(metrics)
-    if not api_key:
+    if not api_key or not _EMERGENT_AVAILABLE:
         return fallback
 
     system_message = (
